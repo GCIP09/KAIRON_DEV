@@ -4,7 +4,7 @@ import {
   TrendingUp, DollarSign, UserCheck, CheckCircle2, AlertCircle,
   Sparkles, BarChart3, Edit2, Trash2, X, ChevronRight, ArrowLeft,
   Package, AlertTriangle, Filter, RefreshCw, Sun, Moon, Palette,
-  ChevronDown
+  ChevronDown, HelpCircle
 } from 'lucide-react';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -270,6 +270,16 @@ function ProductModal({ title, form, setForm, onSubmit, onClose, config, submitL
   );
 }
 
+interface ConfirmDialogConfig {
+  title: string;
+  text: string;
+  type?: 'warning' | 'info' | 'danger' | 'success';
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: () => void | Promise<void>;
+  onCancel?: () => void;
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // APP PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════════════
@@ -291,6 +301,12 @@ export default function App() {
   const [clienteDetalle,    setClienteDetalle]    = useState<ClienteUI | null>(null);
   const [showTrinity,       setShowTrinity]       = useState(false);
   const [txToCancel,        setTxToCancel]        = useState<Transaccion | null>(null);
+
+  // SweetAlert-like Confirmation state
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogConfig | null>(null);
+  const showConfirm = (config: ConfirmDialogConfig) => {
+    setConfirmDialog(config);
+  };
 
   // Modals
   const [showAddClientModal,  setShowAddClientModal]  = useState(false);
@@ -807,69 +823,79 @@ export default function App() {
       estatusEntrega: newSale.estatusEntrega
     };
 
-    if (backendStatus === 'online') {
-      try {
-        const r = await fetch(`${API}/api/transacciones`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloadVenta)
+    showConfirm({
+      title: '¿Confirmar Registro de Venta?',
+      text: `Se registrará una transacción por un monto total de $${montoFinal.toFixed(2)}.${puntosGanados > 0 ? ` El cliente obtendrá +${puntosGanados} pts de lealtad.` : ''}`,
+      type: 'warning',
+      confirmText: 'Registrar Venta',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        if (backendStatus === 'online') {
+          try {
+            const r = await fetch(`${API}/api/transacciones`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payloadVenta)
+            });
+            if (!r.ok) { triggerAlert('error', 'Error al registrar venta.'); return; }
+            
+            // Si hubo canje de puntos, registrar transacción negativa
+            if (clienteId && puntosCanjeados > 0) {
+              await fetch(`${API}/api/transacciones`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  clienteId,
+                  tipoNegocio,
+                  monto: 0,
+                  puntosGanados: -puntosCanjeados,
+                  comentarios: `Canje: -${puntosCanjeados} pts = -$${(puntosCanjeados * config.valorPuntoDescuento).toFixed(2)} descuento`,
+                }),
+              });
+            }
+            triggerAlert('success', puntosCanjeados > 0 ? `Venta registrada. Canje de ${puntosCanjeados} pts aplicado.` : 'Venta registrada.');
+            if (puntosGanados > 0) flashTrinity();
+            loadData();
+          } catch { triggerAlert('error', 'Error de conexión.'); }
+        } else {
+          const dbClient = clientes.find(c => c.id === clienteId);
+          setTransacciones(prev => [{ id: prev.length + 1, ...payloadVenta, cliente: dbClient, createdAt: new Date().toISOString() }, ...prev]);
+          
+          // Actualizar puntos del cliente localmente
+          if (clienteId) {
+            setClientes(prev => prev.map(c => c.id === clienteId
+              ? { ...c, saldoPuntos: c.saldoPuntos + puntosGanados - puntosCanjeados }
+              : c
+            ));
+          }
+
+          // Decrementar stock localmente
+          setProductos(prev => prev.map(p => {
+            const cartItem = cart.find(item => item.producto.id === p.id && item.producto.categoria === p.categoria);
+            if (cartItem && p.stock !== 9999) {
+              return { ...p, stock: Math.max(0, p.stock - cartItem.cantidad) };
+            }
+            return p;
+          }));
+
+          if (puntosGanados > 0) flashTrinity();
+          triggerAlert('success', 'Venta guardada (offline). Stock actualizado localmente.');
+        }
+
+        // Restablecer formulario de venta y carrito
+        setNewSale({
+          clienteId: '',
+          tipoNegocio: 'ROPA',
+          monto: '',
+          comentarios: '',
+          puntosCanjeados: 0,
+          metodoEntrega: 'Retiro',
+          estatusEntrega: 'Entregado'
         });
-        if (!r.ok) { triggerAlert('error', 'Error al registrar venta.'); return; }
-        
-        // Si hubo canje de puntos, registrar transacción negativa
-        if (clienteId && puntosCanjeados > 0) {
-          await fetch(`${API}/api/transacciones`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              clienteId,
-              tipoNegocio,
-              monto: 0,
-              puntosGanados: -puntosCanjeados,
-              comentarios: `Canje: -${puntosCanjeados} pts = -$${(puntosCanjeados * config.valorPuntoDescuento).toFixed(2)} descuento`,
-            }),
-          });
-        }
-        triggerAlert('success', puntosCanjeados > 0 ? `Venta registrada. Canje de ${puntosCanjeados} pts aplicado.` : 'Venta registrada.');
-        if (puntosGanados > 0) flashTrinity();
-        loadData();
-      } catch { triggerAlert('error', 'Error de conexión.'); }
-    } else {
-      const dbClient = clientes.find(c => c.id === clienteId);
-      setTransacciones(prev => [{ id: prev.length + 1, ...payloadVenta, cliente: dbClient, createdAt: new Date().toISOString() }, ...prev]);
-      
-      // Actualizar puntos del cliente localmente
-      if (clienteId) {
-        setClientes(prev => prev.map(c => c.id === clienteId
-          ? { ...c, saldoPuntos: c.saldoPuntos + puntosGanados - puntosCanjeados }
-          : c
-        ));
+        setCart([]);
+        setProdSearch('');
       }
-
-      // Decrementar stock localmente
-      setProductos(prev => prev.map(p => {
-        const cartItem = cart.find(item => item.producto.id === p.id && item.producto.categoria === p.categoria);
-        if (cartItem && p.stock !== 9999) {
-          return { ...p, stock: Math.max(0, p.stock - cartItem.cantidad) };
-        }
-        return p;
-      }));
-
-      if (puntosGanados > 0) flashTrinity();
-      triggerAlert('success', 'Venta guardada (offline). Stock actualizado localmente.');
-    }
-
-    setNewSale({
-      clienteId: '',
-      tipoNegocio: 'ROPA',
-      monto: '',
-      comentarios: '',
-      puntosCanjeados: 0,
-      metodoEntrega: 'Retiro',
-      estatusEntrega: 'Entregado'
     });
-    setCart([]);
-    setProdSearch('');
   };
 
   const handleCancelTransaction = async (t: Transaccion) => {
@@ -2565,6 +2591,80 @@ export default function App() {
             </div>
           </div>
         </Modal>
+      )}      {/* Generic Confirmation Modal (SweetAlert-like) */}
+      {confirmDialog && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200"
+          style={{ background: 'rgba(0,0,0,0.65)' }}
+          onClick={() => {
+            if (confirmDialog.onCancel) confirmDialog.onCancel();
+            setConfirmDialog(null);
+          }}
+        >
+          <div className="glass-panel p-6 rounded-2xl w-full max-w-sm space-y-6 shadow-2xl text-center relative overflow-hidden animate-in zoom-in-95 duration-200"
+            style={{ background: 'var(--k-surface)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Icon decoration based on type */}
+            <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-2"
+              style={{
+                background: confirmDialog.type === 'danger' ? 'rgba(239, 68, 68, 0.12)'
+                          : confirmDialog.type === 'success' ? 'rgba(34, 197, 94, 0.12)'
+                          : 'rgba(245, 158, 11, 0.12)',
+                color: confirmDialog.type === 'danger' ? '#ef4444'
+                     : confirmDialog.type === 'success' ? 'var(--k-green)'
+                     : 'var(--k-gold)',
+                border: `1px solid ${confirmDialog.type === 'danger' ? 'rgba(239, 68, 68, 0.25)'
+                                     : confirmDialog.type === 'success' ? 'rgba(34, 197, 94, 0.25)'
+                                     : 'rgba(245, 158, 11, 0.25)'}`
+              }}
+            >
+              {confirmDialog.type === 'danger' ? (
+                <Trash2 className="w-8 h-8" />
+              ) : confirmDialog.type === 'success' ? (
+                <CheckCircle2 className="w-8 h-8" />
+              ) : confirmDialog.type === 'warning' ? (
+                <AlertTriangle className="w-8 h-8" />
+              ) : (
+                <HelpCircle className="w-8 h-8" />
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold k-text tracking-tight">{confirmDialog.title}</h3>
+              <p className="text-sm k-muted leading-relaxed">{confirmDialog.text}</p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirmDialog.onCancel) confirmDialog.onCancel();
+                  setConfirmDialog(null);
+                }}
+                className="flex-1 py-2.5 text-xs rounded-xl font-bold border transition-all"
+                style={{ background: 'var(--k-nav-hover)', color: 'var(--k-muted)', borderColor: 'var(--k-border)' }}
+              >
+                {confirmDialog.cancelText || 'Cancelar'}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const callback = confirmDialog.onConfirm;
+                  setConfirmDialog(null);
+                  await callback();
+                }}
+                className="flex-1 py-2.5 text-xs rounded-xl font-bold text-white shadow-md transition-all active:scale-[0.97]"
+                style={{
+                  background: confirmDialog.type === 'danger' ? '#ef4444'
+                            : confirmDialog.type === 'success' ? 'var(--k-green)'
+                            : 'linear-gradient(135deg, var(--k-gold), var(--k-gold-dark))'
+                }}
+              >
+                {confirmDialog.confirmText || 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
 
