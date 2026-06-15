@@ -1,0 +1,540 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SISTEMA DE TEMAS KAIRON — "Agro-Tecnología Sacra"
+   La Trinidad de Colores: Oro (Padre) · Verde (Hijo) · Teal (Espíritu)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 🌑 Tema 1: ZINC SAGRADO (oscuro, predeterminado) ──────────────────────── */
+:root,
+[data-theme="zinc-sagrado"] {
+  --k-bg:        #09090B;   /* zinc-950  — el fondo más profundo */
+  --k-sidebar:   #0F0F12;   /* sidebar ligeramente más oscuro */
+  --k-surface:   rgba(20, 20, 26, 0.80);
+  --k-panel-bg:  rgba(20, 20, 26, 0.70);
+  --k-border:    rgba(245, 158, 11, 0.12);  /* oro tenue */
+  --k-border-h:  rgba(245, 158, 11, 0.25);  /* hover */
+  --k-text:      #FAFAFA;
+  --k-muted:     #71717A;
+  --k-input-bg:  #09090B;
+  --k-gold:      #F59E0B;
+  --k-gold-dark: #D97706;
+  --k-green:     #22C55E;
+  --k-teal:      #14B8A6;
+  --k-indigo:    #818cf8;
+  --k-nav-hover: rgba(245, 158, 11, 0.08);
+  --k-nav-active-bg: rgba(245, 158, 11, 0.15);
+  --k-nav-active-border: #F59E0B;
+  --k-glow-corner-1: rgba(245, 158, 11, 0.06);
+  --k-glow-corner-2: rgba(34, 197, 94, 0.04);
+  color-scheme: dark;
+}
+
+/* ── 🌅 Tema 2: AMANECER AKIL (cálido oscuro, tierras mayas) ──────────────── */
+[data-theme="amanecer-akil"] {
+  --k-bg:        #110700;   /* tierra oscura, noche en milpa */
+  --k-sidebar:   #0A0400;
+  --k-surface:   rgba(30, 16, 0, 0.85);
+  --k-panel-bg:  rgba(30, 16, 0, 0.75);
+  --k-border:    rgba(251, 146, 60, 0.18);
+  --k-border-h:  rgba(251, 146, 60, 0.35);
+  --k-text:      #FFF7ED;
+  --k-muted:     #A87E5A;
+  --k-input-bg:  #0A0400;
+  --k-gold:      #FB923C;   /* naranja amanecer */
+  --k-gold-dark: #EA7316;
+  --k-green:     #84CC16;   /* verde limón — maíz */
+  --k-teal:      #06B6D4;   /* aguamiel/cenote */
+  --k-nav-hover: rgba(251, 146, 60, 0.10);
+  --k-nav-active-bg: rgba(251, 146, 60, 0.18);
+  --k-nav-active-border: #FB923C;
+  --k-glow-corner-1: rgba(251, 146, 60, 0.10);
+  --k-glow-corner-2: rgba(132, 204, 22, 0.07);
+  color-scheme: dark;
+}
+
+/* ── 🌌 Tema 3: NOCHE PROFUNDA (oscurísimo, alto contraste dorado) ────────── */
+[data-theme="noche-profunda"] {
+  --k-bg:        #000000;
+  --k-sidebar:   #030303;
+  --k-surface:   rgba(10, 10, 10, 0.92);
+  --k-panel-bg:  rgba(10, 10, 10, 0.85);
+  --k-border:    rgba(251, 191, 36, 0.20);
+  --k-border-h:  rgba(251, 191, 36, 0.40);
+  --k-text:      #FFFFFF;
+  --k-muted:     #6B7280;
+  --k-input-bg:  #050505;
+  --k-gold:      #FBBF24;   /* oro brillante */
+  --k-gold-dark: #F59E0B;
+  --k-green:     #A3E635;   /* lima vibrante */
+  --k-teal:      #2DD4BF;   /* aguamarina */
+  --k-nav-hover: rgba(251, 191, 36, 0.08);
+  --k-nav-active-bg: rgba(251, 191, 36, 0.15);
+  --k-nav-active-border: #FBBF24;
+  --k-glow-corner-1: rgba(251, 191, 36, 0.08);
+  --k-glow-corner-2: rgba(163, 230, 53, 0.06);
+  color-scheme: dark;
+}
+
+/* ── 🌿 Tema 4: CAMPO CLARO (día, modo claro agrario) ─────────────────────── */
+[data-theme="campo-claro"] {
+  --k-bg:        #F5F3EE;   /* papel viejo, tierra seca */
+  --k-sidebar:   #EEEBE3;
+  --k-surface:   rgba(255, 252, 245, 0.90);
+  --k-panel-bg:  rgba(255, 252, 245, 0.85);
+  --k-border:    rgba(120, 53, 15, 0.14);
+  --k-border-h:  rgba(120, 53, 15, 0.28);
+  --k-text:      #1C1009;
+  --k-muted:     #78716C;
+  --k-input-bg:  #FFFFFF;
+  --k-gold:      #B45309;   /* oro quemado */
+  --k-gold-dark: #92400E;
+  --k-green:     #16A34A;   /* verde campo */
+  --k-teal:      #0F766E;   /* teal cenote */
+  --k-indigo:    #4f46e5;
+  --k-nav-hover: rgba(120, 53, 15, 0.08);
+  --k-nav-active-bg: rgba(180, 83, 9, 0.12);
+  --k-nav-active-border: #B45309;
+  --k-glow-corner-1: rgba(180, 83, 9, 0.05);
+  --k-glow-corner-2: rgba(22, 163, 74, 0.05);
+  color-scheme: light;
+}
+
+/* ── 🔵 Tema 5: AZUL KAIRON (lateral azul marino + área principal clara) ────── */
+[data-theme="azul-kairon"] {
+  --k-bg:        #EEF2FF;   /* índigo muy claro — área principal */
+  --k-sidebar:   #0D1B3E;   /* azul marino profundo — igual al logo Kairon */
+  --k-surface:   rgba(255, 255, 255, 0.95);
+  --k-panel-bg:  rgba(255, 255, 255, 0.92);
+  --k-border:    rgba(13, 27, 62, 0.10);
+  --k-border-h:  rgba(13, 27, 62, 0.22);
+  --k-text:      #1E293B;
+  --k-muted:     #64748B;
+  --k-input-bg:  #FFFFFF;
+  --k-gold:      #F59E0B;
+  --k-gold-dark: #D97706;
+  --k-green:     #16A34A;
+  --k-teal:      #0F766E;
+  --k-indigo:    #3730a3;
+  --k-nav-hover: rgba(245, 158, 11, 0.12);
+  --k-nav-active-bg: rgba(245, 158, 11, 0.20);
+  --k-nav-active-border: #F59E0B;
+  --k-glow-corner-1: rgba(13, 27, 62, 0.08);
+  --k-glow-corner-2: rgba(22, 163, 74, 0.06);
+  color-scheme: light;
+}
+
+/* ── 🌤 Tema 6: LUZ SAGRADA (claro premium, paleta oficial Kairon) ──────────── */
+[data-theme="luz-sagrada"] {
+  --k-bg:        #FDFAF5;   /* crema cálido, casi blanco */
+  --k-sidebar:   #FEF9EE;   /* dorado muy tenue en sidebar */
+  --k-surface:   rgba(255, 253, 247, 0.96);
+  --k-panel-bg:  rgba(255, 253, 247, 0.92);
+  --k-border:    rgba(180, 83, 9, 0.14);
+  --k-border-h:  rgba(180, 83, 9, 0.28);
+  --k-text:      #1C1009;
+  --k-muted:     #78716C;
+  --k-input-bg:  #FFFFFF;
+  --k-gold:      #D97706;
+  --k-gold-dark: #B45309;
+  --k-green:     #15803D;
+  --k-teal:      #0F766E;
+  --k-indigo:    #4f46e5;
+  --k-nav-hover: rgba(180, 83, 9, 0.07);
+  --k-nav-active-bg: rgba(180, 83, 9, 0.12);
+  --k-nav-active-border: #D97706;
+  --k-glow-corner-1: rgba(217, 119, 6, 0.08);
+  --k-glow-corner-2: rgba(21, 128, 61, 0.05);
+  color-scheme: light;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   BASE STYLES
+   ══════════════════════════════════════════════════════════════════════════════ */
+@layer base {
+  * { box-sizing: border-box; }
+
+  html {
+    background-color: var(--k-bg);
+    color: var(--k-text);
+    transition: background-color 0.35s ease, color 0.25s ease;
+  }
+
+  body {
+    background-color: var(--k-bg);
+    color: var(--k-text);
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   COMPONENTES TEMÁTICOS
+   ══════════════════════════════════════════════════════════════════════════════ */
+@layer components {
+
+  /* ── Glassmorphism panel ─────────────────────────────────────────────────── */
+  .glass-panel {
+    background: var(--k-panel-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--k-border);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .glass-panel:hover {
+    border-color: var(--k-border-h);
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────────────────────── */
+  .k-sidebar {
+    background-color: var(--k-sidebar);
+    border-right: 1px solid var(--k-border);
+    transition: background-color 0.35s ease, border-color 0.35s ease;
+  }
+
+  /* ── App wrapper ─────────────────────────────────────────────────────────── */
+  .k-app {
+    background-color: var(--k-bg);
+    color: var(--k-text);
+    height: 100vh;
+    display: flex;
+    transition: background-color 0.35s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Gradiente en esquinas (efecto "Agro-Tecnológico") */
+  .k-app::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    right: -10%;
+    width: 50vw;
+    height: 50vw;
+    background: radial-gradient(circle, var(--k-glow-corner-1) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    transition: background 0.5s ease;
+  }
+  .k-app::after {
+    content: '';
+    position: fixed;
+    bottom: -20%;
+    left: -10%;
+    width: 40vw;
+    height: 40vw;
+    background: radial-gradient(circle, var(--k-glow-corner-2) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    transition: background 0.5s ease;
+  }
+
+  /* ── Header ──────────────────────────────────────────────────────────────── */
+  .k-header {
+    background-color: color-mix(in srgb, var(--k-bg) 80%, transparent);
+    border-bottom: 1px solid var(--k-border);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: background-color 0.35s ease, border-color 0.35s ease;
+  }
+
+  /* ── Texto temático ──────────────────────────────────────────────────────── */
+  .k-text    { color: var(--k-text); }
+  .k-muted   { color: var(--k-muted); }
+  .k-gold    { color: var(--k-gold); }
+  .k-green   { color: var(--k-green); }
+  .k-teal    { color: var(--k-teal); }
+
+  /* ── Input temático ──────────────────────────────────────────────────────── */
+  .k-input {
+    width: 100%;
+    background-color: var(--k-input-bg);
+    border: 1px solid var(--k-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--k-text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+  }
+  .k-input::placeholder { color: var(--k-muted); }
+  .k-input:focus {
+    border-color: var(--k-gold);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-gold) 15%, transparent);
+  }
+
+  /* ── Select temático ─────────────────────────────────────────────────────── */
+  .k-select {
+    width: 100%;
+    background-color: var(--k-input-bg);
+    border: 1px solid var(--k-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--k-text);
+    transition: border-color 0.2s ease;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+  }
+  .k-select:focus {
+    border-color: var(--k-gold);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-gold) 15%, transparent);
+  }
+
+  /* ── Botón primario ──────────────────────────────────────────────────────── */
+  .k-btn-primary {
+    background: linear-gradient(135deg, var(--k-gold), var(--k-gold-dark));
+    color: #fff;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--k-gold) 30%, transparent);
+  }
+  .k-btn-primary:hover  { opacity: 0.9; box-shadow: 0 6px 20px color-mix(in srgb, var(--k-gold) 40%, transparent); }
+  .k-btn-primary:active { transform: scale(0.97); }
+
+  /* ── Nav item ────────────────────────────────────────────────────────────── */
+  .k-nav-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--k-muted);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    border-left: 2px solid transparent;
+  }
+  .k-nav-item:hover {
+    background-color: var(--k-nav-hover);
+    color: var(--k-text);
+  }
+  .k-nav-item.active {
+    background-color: var(--k-nav-active-bg);
+    color: var(--k-gold);
+    border-left-color: var(--k-nav-active-border);
+  }
+
+  /* ── Logo font ───────────────────────────────────────────────────────────── */
+  .kairon-logo-text {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-weight: 800;
+    background: linear-gradient(
+      135deg,
+      var(--k-gold) 0%,
+      color-mix(in srgb, var(--k-gold) 70%, #fff) 40%,
+      var(--k-green) 75%,
+      var(--k-teal) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Kairon gradient (genérico) ──────────────────────────────────────────── */
+  .k-gradient {
+    background: linear-gradient(135deg, var(--k-gold), var(--k-green), var(--k-teal));
+  }
+  .k-gradient-text {
+    background: linear-gradient(135deg, var(--k-gold), var(--k-green), var(--k-teal));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Separador temático ──────────────────────────────────────────────────── */
+  .k-divider {
+    border: none;
+    height: 1px;
+    background: var(--k-border);
+    margin: 0;
+  }
+
+  /* ── Tabla temática ──────────────────────────────────────────────────────── */
+  .k-table th {
+    color: var(--k-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--k-border);
+  }
+  .k-table tr:hover td { background-color: color-mix(in srgb, var(--k-gold) 4%, transparent); }
+  .k-table td {
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--k-border) 60%, transparent);
+    color: var(--k-text);
+    font-size: 0.875rem;
+  }
+  .k-table td.muted { color: var(--k-muted); }
+
+  /* ── Badge de categoría (temático) ──────────────────────────────────────── */
+  .badge-paca {
+    background-color: color-mix(in srgb, var(--k-gold) 12%, transparent);
+    color: var(--k-gold);
+    border: 1px solid color-mix(in srgb, var(--k-gold) 25%, transparent);
+  }
+  .badge-papeleria {
+    background-color: color-mix(in srgb, var(--k-green) 12%, transparent);
+    color: var(--k-green);
+    border: 1px solid color-mix(in srgb, var(--k-green) 25%, transparent);
+  }
+  .badge-servicio {
+    background-color: color-mix(in srgb, var(--k-teal) 12%, transparent);
+    color: var(--k-teal);
+    border: 1px solid color-mix(in srgb, var(--k-teal) 25%, transparent);
+  }
+  .badge-abarrotes {
+    background-color: color-mix(in srgb, var(--k-indigo) 12%, transparent);
+    color: var(--k-indigo);
+    border: 1px solid color-mix(in srgb, var(--k-indigo) 25%, transparent);
+  }
+
+  /* ── Theme Switcher ──────────────────────────────────────────────────────── */
+  .theme-dot {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    flex-shrink: 0;
+  }
+  .theme-dot:hover       { transform: scale(1.15); }
+  .theme-dot.active      { border-color: var(--k-text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-text) 20%, transparent); }
+  .theme-dot-zinc        { background: linear-gradient(135deg, #F59E0B, #22C55E); }
+  .theme-dot-amanecer    { background: linear-gradient(135deg, #FB923C, #84CC16); }
+  .theme-dot-noche       { background: linear-gradient(135deg, #000, #FBBF24 60%, #A3E635); }
+  .theme-dot-campo       { background: linear-gradient(135deg, #F5F3EE, #B45309 50%, #16A34A); }
+  /* Mitad azul marino / mitad blanco — representa el contraste lateral/principal */
+  .theme-dot-azul        { background: linear-gradient(135deg, #0D1B3E 0%, #0D1B3E 50%, #EEF2FF 50%); border: 1.5px solid #CBD5E1; }
+  .theme-dot-luz         { background: linear-gradient(135deg, #FDFAF5, #D97706 50%, #15803D); border: 1.5px solid #E2D9C8; }
+
+} /* end @layer components */
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ANIMACIONES — "La Trinidad" (micro-interacción de puntos)
+   ══════════════════════════════════════════════════════════════════════════════ */
+@keyframes trinity-spark {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0); }
+  40%  { opacity: 1; transform: translate(var(--tx, 0), var(--ty, -16px)) scale(1.4); }
+  100% { opacity: 0; transform: translate(var(--tx2, 0), var(--ty2, -28px)) scale(0.6); }
+}
+
+.trinity-spark {
+  position: absolute;
+  pointer-events: none;
+  font-size: 0.85rem;
+  animation: trinity-spark 1.6s ease-out forwards;
+}
+.trinity-spark:nth-child(1) { --tx: -10px; --ty: -18px; --tx2: -16px; --ty2: -32px; animation-delay: 0s; }
+.trinity-spark:nth-child(2) { --tx:   0px; --ty: -22px; --tx2:   0px; --ty2: -38px; animation-delay: 0.1s; }
+.trinity-spark:nth-child(3) { --tx:  10px; --ty: -18px; --tx2:  16px; --ty2: -32px; animation-delay: 0.2s; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SCROLLBAR TEMÁTICO
+   ══════════════════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--k-gold) 40%, transparent);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--k-gold) 70%, transparent); }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ADAPTACIONES PARA TEMA CAMPO CLARO (light mode overrides)
+   ══════════════════════════════════════════════════════════════════════════════ */
+[data-theme="campo-claro"] .glass-panel {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+[data-theme="campo-claro"] .k-nav-item { color: #57534e; }
+[data-theme="campo-claro"] .k-nav-item:hover { color: var(--k-gold); }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ADAPTACIONES PARA TEMA AZUL KAIRON
+   El sidebar es oscuro (azul marino) pero el área principal es clara.
+   Los elementos DENTRO del sidebar necesitan texto claro.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Sidebar border — más sutil sobre el azul marino */
+[data-theme="azul-kairon"] .k-sidebar {
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Textos dentro del sidebar: forzamos a claro */
+[data-theme="azul-kairon"] .k-sidebar .k-muted,
+[data-theme="azul-kairon"] .k-sidebar .text-\[10px\],
+[data-theme="azul-kairon"] .k-sidebar .text-\[11px\],
+[data-theme="azul-kairon"] .k-sidebar .text-xs {
+  color: rgba(203, 213, 225, 0.55);
+}
+[data-theme="azul-kairon"] .k-sidebar .k-text {
+  color: #E2E8F0;
+}
+
+/* Nav items sobre sidebar oscuro */
+[data-theme="azul-kairon"] .k-nav-item {
+  color: rgba(203, 213, 225, 0.65);
+}
+[data-theme="azul-kairon"] .k-nav-item:hover {
+  color: #FFFFFF;
+  background-color: rgba(245, 158, 11, 0.12);
+}
+[data-theme="azul-kairon"] .k-nav-item.active {
+  background-color: rgba(245, 158, 11, 0.20);
+  color: #F59E0B;
+  border-left-color: #F59E0B;
+}
+
+/* Badge de alerta en nav (bajo stock) — visible sobre azul marino */
+[data-theme="azul-kairon"] .k-sidebar span[style*="var(--k-gold)"] {
+  color: #0D1B3E !important; /* texto oscuro sobre badge dorado */
+}
+
+/* Panels de la área principal en modo claro */
+[data-theme="azul-kairon"] .glass-panel {
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 20px rgba(13, 27, 62, 0.08);
+  border-color: rgba(13, 27, 62, 0.09);
+}
+[data-theme="azul-kairon"] .glass-panel:hover {
+  border-color: rgba(13, 27, 62, 0.18);
+  box-shadow: 0 4px 24px rgba(13, 27, 62, 0.12);
+}
+
+/* Header claro */
+[data-theme="azul-kairon"] .k-header {
+  background-color: rgba(238, 242, 255, 0.90);
+  border-bottom-color: rgba(13, 27, 62, 0.10);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ADAPTACIONES PARA TEMA LUZ SAGRADA
+   ══════════════════════════════════════════════════════════════════════════════ */
+[data-theme="luz-sagrada"] .glass-panel {
+  box-shadow: 0 2px 16px rgba(120, 53, 15, 0.07);
+}
+[data-theme="luz-sagrada"] .k-nav-item { color: #57534e; }
+[data-theme="luz-sagrada"] .k-nav-item:hover { color: var(--k-gold); }
+[data-theme="luz-sagrada"] .k-sidebar {
+  border-right-color: rgba(180, 83, 9, 0.15);
+}
+[data-theme="luz-sagrada"] .k-header {
+  background-color: rgba(253, 250, 245, 0.90);
+  border-bottom-color: rgba(180, 83, 9, 0.12);
+}

@@ -1,0 +1,198 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- SECCIÓN 01: ROLES, USUARIOS Y PERMISOS ---
+
+model Rol {
+  id          Int           @id @default(autoincrement()) @map("RoleID")
+  nombre      String        @unique @map("Nombre")
+  descripcion String?       @map("Descripcion")
+  permisos    RolePermiso[]
+  usuarios    UsuarioRol[]
+
+  @@map("Roles")
+}
+
+model Permiso {
+  id          Int           @id @default(autoincrement()) @map("PermisoID")
+  slugNombre  String        @unique @map("Slug_Nombre")
+  descripcion String?       @map("Descripcion")
+  roles       RolePermiso[]
+
+  @@map("Permisos")
+}
+
+model RolePermiso {
+  rolId     Int     @map("RoleID")
+  permisoId Int     @map("PermisoID")
+  rol       Rol     @relation(fields: [rolId], references: [id], onDelete: Cascade)
+  permiso   Permiso @relation(fields: [permisoId], references: [id], onDelete: Cascade)
+
+  @@id([rolId, permisoId])
+  @@map("Role_Permiso")
+}
+
+model Usuario {
+  id            Int          @id @default(autoincrement()) @map("UsuarioID")
+  nombre        String       @map("Nombre")
+  email         String       @unique @map("Email")
+  passwordHash  String       @map("PasswordHash")
+  activo        Boolean      @default(true) @map("Activo")
+  fechaRegistro DateTime     @default(now()) @map("FechaRegistro")
+  modificadoEn  DateTime?    @updatedAt @map("ModificadoEn")
+  modificadoPor String?      @map("ModificadoPor")
+  roles         UsuarioRol[]
+  clientes      Cliente[]
+
+  @@map("Usuarios")
+}
+
+model UsuarioRol {
+  usuarioId Int     @map("UsuarioID")
+  rolId     Int     @map("RoleID")
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  rol       Rol     @relation(fields: [rolId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, rolId])
+  @@map("Usuario_Role")
+}
+
+// --- SECCIÓN 02: ESTRUCTURA DE NEGOCIOS Y LEALTAD ---
+
+model Negocio {
+  id                   Int                 @id @default(autoincrement()) @map("NegocioID")
+  nombre               String              @map("Nombre")
+  montoMinimoParaPunto Decimal             @db.Decimal(10, 2) @map("MontoMinimoParaPunto")
+  factorPuntos         Decimal             @default(1.0) @db.Decimal(5, 2) @map("FactorPuntos")
+  activo               Boolean             @default(true) @map("Activo")
+  transacciones        TransaccionPuntos[]
+
+  @@map("Negocios")
+}
+
+model Cliente {
+  id               Int                 @id @default(autoincrement()) @map("ClienteID")
+  usuarioId        Int?                @map("UsuarioID")
+  usuario          Usuario?            @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  nombreCompleto   String              @map("NombreCompleto")
+  telefono         String?             @unique @map("Telefono")
+  email            String?             @map("Email")
+  puntosAcumulados Int                 @default(0) @map("PuntosAcumulados")
+  fechaRegistro    DateTime            @default(now()) @map("FechaRegistro")
+  ultimaCompra     DateTime?           @map("UltimaCompra")
+  transacciones    TransaccionPuntos[]
+
+  @@map("Clientes")
+}
+
+model TransaccionPuntos {
+  id              Int      @id @default(autoincrement()) @map("TransaccionID")
+  clienteId       Int?     @map("ClienteID")
+  cliente         Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  negocioId       Int?     @map("NegocioID")
+  negocio         Negocio? @relation(fields: [negocioId], references: [id], onDelete: SetNull)
+  montoVenta      Decimal  @db.Decimal(18, 2) @map("MontoVenta")
+  puntosGenerados Int      @map("PuntosGenerados")
+  tipoMovimiento  String   @map("TipoMovimiento") // "Suma" o "Canje"
+  comentarios     String?  @map("Comentarios")
+  metodoEntrega   String   @default("Tienda") @map("MetodoEntrega") // "Tienda", "Retiro" o "Envio"
+  estatusEntrega  String   @default("Entregado") @map("EstatusEntrega") // "Pendiente", "Preparado", "Enviado", "Entregado"
+  fecha           DateTime @default(now()) @map("Fecha")
+  items           Json?    @map("Items")
+  cancelada       Boolean  @default(false) @map("Cancelada")
+
+  @@map("Transacciones_Puntos")
+}
+
+// --- SECCIÓN 03: MÓDULOS DE INVENTARIO ---
+
+model PacaEstado {
+  id      Int              @id @default(autoincrement()) @map("EstadoID")
+  nombre  String           @unique @map("Nombre")
+  prendas InventarioPaca[]
+
+  @@map("Paca_Estados")
+}
+
+model PacaCategoria {
+  id      Int              @id @default(autoincrement()) @map("CategoriaID")
+  nombre  String           @unique @map("Nombre")
+  prendas InventarioPaca[]
+
+  @@map("Paca_Categorias")
+}
+
+model InventarioPaca {
+  id           Int            @id @default(autoincrement()) @map("PrendaID")
+  codigoBarras String?        @unique @map("CodigoBarras")
+  nombre       String         @map("Nombre")
+  descripcion  String?        @map("Descripcion")
+  categoriaId  Int?           @map("CategoriaID")
+  categoria    PacaCategoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  talla        String?        @map("Talla")
+  color        String?        @map("Color")
+  precio       Decimal        @db.Decimal(18, 2) @map("Precio")
+  stockActual  Int            @default(1) @map("StockActual")
+  stockMinimo  Int            @default(0) @map("StockMinimo")
+  imagenUrl    String?        @map("ImagenURL")
+  estadoId     Int?           @map("EstadoID")
+  estado       PacaEstado?    @relation(fields: [estadoId], references: [id], onDelete: SetNull)
+  esJoyita     Boolean        @default(false) @map("EsJoyita")
+  fechaIngreso DateTime       @default(now()) @map("FechaIngreso")
+
+  @@map("Inventario_Paca")
+}
+
+model InventarioPapeleria {
+  id             Int     @id @default(autoincrement()) @map("ProductoID")
+  sku            String? @unique @map("SKU")
+  nombre         String  @map("Nombre")
+  cantidadStock  Int     @default(0) @map("CantidadStock")
+  precioUnitario Decimal @db.Decimal(18, 2) @map("PrecioUnitario")
+  puntoReorden   Int     @default(5) @map("PuntoReorden")
+
+  @@map("Inventario_Papeleria")
+}
+
+model InventarioAbarrotes {
+  id             Int     @id @default(autoincrement()) @map("ProductoID")
+  sku            String? @unique @map("SKU")
+  nombre         String  @map("Nombre")
+  cantidadStock  Int     @default(0) @map("CantidadStock")
+  precioUnitario Decimal @db.Decimal(18, 2) @map("PrecioUnitario")
+  puntoReorden   Int     @default(5) @map("PuntoReorden")
+
+  @@map("Inventario_Abarrotes")
+}
+
+model InventarioServicio {
+  id             Int     @id @default(autoincrement()) @map("ServicioID")
+  nombre         String  @map("Nombre")
+  precioUnitario Decimal @db.Decimal(18, 2) @map("PrecioUnitario")
+
+  @@map("Inventario_Servicios")
+}
+
+model Configuracion {
+  id                    Int     @id @default(1) @map("ConfiguracionID")
+  nombreNegocio         String  @default("Kairon") @map("NombreNegocio")
+  whatsapp              String  @default("525512345678") @map("WhatsApp")
+  horario               String  @default("Lunes a Viernes 9am - 6pm") @map("Horario")
+  factorPuntosRopa      Decimal @default(0.10) @db.Decimal(5, 4) @map("FactorPuntosRopa")
+  factorPuntosPapeleria Decimal @default(0.05) @db.Decimal(5, 4) @map("FactorPuntosPapeleria")
+  factorPuntosAbarrotes Decimal @default(0.02) @db.Decimal(5, 4) @map("FactorPuntosAbarrotes")
+  valorPuntoDescuento   Decimal @default(0.50) @db.Decimal(5, 2) @map("ValorPuntoDescuento")
+  habilitarRopa         Boolean @default(true) @map("HabilitarRopa")
+  habilitarPapeleria    Boolean @default(true) @map("HabilitarPapeleria")
+  habilitarAbarrotes    Boolean @default(true) @map("HabilitarAbarrotes")
+  habilitarServicios    Boolean @default(true) @map("HabilitarServicios")
+  habilitarPuntos       Boolean @default(true) @map("HabilitarPuntos")
+
+  @@map("Configuracion")
+}
