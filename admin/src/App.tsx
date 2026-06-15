@@ -70,7 +70,7 @@ interface Transaccion {
 type ActiveTab = 'dashboard' | 'inventario' | 'caja' | 'clientes' | 'reportes' | 'configuracion';
 type InventarioFilter = 'TODOS' | 'ROPA' | 'PAPELERIA' | 'ABARROTES' | 'SERVICIO';
 
-const API = `http://${window.location.hostname}:8000`;
+const API = (import.meta as any).env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MINI COMPONENTS

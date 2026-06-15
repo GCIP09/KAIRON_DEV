@@ -59,7 +59,7 @@ export default function Catalog() {
   // Default WhatsApp configuration
   const defaultWhatsApp = '525512345678'; // Fallback seller number
 
-  const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
+  const API = (import.meta as any).env.PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
 
   useEffect(() => {
     const checkBackend = async () => {
