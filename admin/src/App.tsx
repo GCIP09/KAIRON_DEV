@@ -1001,7 +1001,7 @@ export default function App() {
         {/* Header */}
         <header className="k-header h-20 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto w-full h-full px-8 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex-1 flex items-center justify-start gap-3">
               {clienteDetalle && (
                 <button onClick={() => setClienteDetalle(null)}
                   className="k-muted hover:k-text p-1.5 rounded-lg transition-all"
@@ -1025,7 +1025,7 @@ export default function App() {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-end gap-3">
               {productosBajoStock.length > 0 && (
                 <button onClick={() => setActiveTab('inventario')}
                   className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-all"
