@@ -4,7 +4,7 @@ import {
   TrendingUp, DollarSign, UserCheck, CheckCircle2, AlertCircle,
   Sparkles, BarChart3, Edit2, Trash2, X, ChevronRight, ArrowLeft,
   Package, AlertTriangle, Filter, RefreshCw, Sun, Moon, Palette,
-  ChevronDown, HelpCircle
+  ChevronDown, HelpCircle, Menu
 } from 'lucide-react';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -315,6 +315,7 @@ export default function App() {
   const [clienteDetalle,    setClienteDetalle]    = useState<ClienteUI | null>(null);
   const [showTrinity,       setShowTrinity]       = useState(false);
   const [txToCancel,        setTxToCancel]        = useState<Transaccion | null>(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // SweetAlert-like Confirmation state
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogConfig | null>(null);
@@ -990,8 +991,8 @@ export default function App() {
   return (
     <div className="k-app" style={{ position: 'relative' }}>
 
-      {/* ── Sidebar ───────────────────────────────────────────────────────────── */}
-      <aside className="k-sidebar w-64 flex flex-col justify-between sticky top-0 h-screen z-30">
+      {/* ── Sidebar (Desktop) ────────────────────────────────────────────────── */}
+      <aside className="k-sidebar hidden lg:flex w-64 flex-col justify-between sticky top-0 h-screen z-30">
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-5 flex items-center gap-3" style={{ borderBottom: '1px solid var(--k-border)' }}>
@@ -1049,13 +1050,100 @@ export default function App() {
         </div>
       </aside>
 
+      {/* ── Sidebar (Mobile Drawer) ──────────────────────────────────────────── */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          {/* Overlay backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          {/* Drawer content */}
+          <aside
+            className="relative flex w-64 max-w-xs flex-1 flex-col justify-between bg-[var(--k-sidebar)] h-full p-0 shadow-2xl transition-transform duration-300 ease-in-out animate-in slide-in-from-left duration-200"
+            style={{ borderRight: '1px solid var(--k-border)' }}
+          >
+            {/* Close button inside mobile sidebar */}
+            <div className="absolute top-4 right-4 z-50">
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-1.5 rounded-lg k-muted hover:k-text"
+                style={{ background: 'var(--k-nav-hover)' }}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex flex-col h-full">
+              {/* Logo */}
+              <div className="p-5 flex items-center gap-3" style={{ borderBottom: '1px solid var(--k-border)' }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
+                  style={{ background: 'linear-gradient(135deg, var(--k-gold) 0%, color-mix(in srgb, var(--k-gold) 60%, var(--k-green)) 50%, var(--k-green) 100%)' }}>
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="kairon-logo-text text-lg leading-none truncate max-w-[120px]">{config.nombreNegocio.toUpperCase()}</h1>
+                  <p className="text-[10px] k-muted font-semibold uppercase tracking-widest mt-0.5">Dashboard</p>
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                {navItems.map(({ tab, icon, label, badge }) => (
+                  <button key={tab} id={`mobile-nav-${tab}`}
+                    onClick={() => { setActiveTab(tab); setSearchQuery(''); setClienteDetalle(null); setMobileSidebarOpen(false); }}
+                    className={`k-nav-item ${activeTab === tab ? 'active' : ''}`}>
+                    <span className="flex items-center gap-3">{icon}<span>{label}</span></span>
+                    {badge ? <span className="text-[10px] font-extrabold text-white rounded-full w-5 h-5 flex items-center justify-center"
+                      style={{ background: 'var(--k-gold)' }}>{badge}</span> : null}
+                  </button>
+                ))}
+              </nav>
+
+              {/* Footer */}
+              <div className="p-3 space-y-2" style={{ borderTop: '1px solid var(--k-border)' }}>
+                <ThemeSwitcher current={theme} onChange={setTheme} />
+                <div className="flex items-center justify-between px-2 py-1">
+                  <span className="text-[11px] k-muted">API:</span>
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold"
+                    style={{ color: backendStatus === 'online' ? '#22C55E' : '#F59E0B' }}>
+                    <span className="w-1.5 h-1.5 rounded-full inline-block"
+                      style={{ background: backendStatus === 'online' ? '#22C55E' : '#F59E0B',
+                               animation: backendStatus === 'online' ? 'ping 1.5s infinite' : 'none' }} />
+                    {backendStatus === 'online' ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+                {backendStatus === 'online' && (
+                  <button onClick={() => { loadData(); setMobileSidebarOpen(false); }}
+                    className="w-full text-xs flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all k-muted"
+                    style={{ background: 'var(--k-nav-hover)' }}>
+                    <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                    Actualizar datos
+                  </button>
+                )}
+                <p className="text-[10px] k-muted text-center">KAIRON v1.1.0</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {/* ── Main ──────────────────────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col h-screen overflow-y-auto relative z-10">
 
         {/* Header */}
         <header className="k-header h-20 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto w-full h-full px-8 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto w-full h-full px-4 sm:px-8 flex items-center justify-between">
             <div className="flex-1 flex items-center justify-start gap-3">
+              {/* Hamburger button on mobile/tablet */}
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(true)}
+                className="lg:hidden k-muted hover:k-text p-2 rounded-xl transition-all mr-1"
+                style={{ background: 'var(--k-nav-hover)' }}
+              >
+                <Menu className="w-5 h-5" />
+              </button>
               {clienteDetalle && (
                 <button onClick={() => setClienteDetalle(null)}
                   className="k-muted hover:k-text p-1.5 rounded-lg transition-all"
