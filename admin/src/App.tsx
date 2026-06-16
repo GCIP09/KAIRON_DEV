@@ -1233,46 +1233,48 @@ export default function App() {
                       {transacciones.length} en total
                     </span>
                   </div>
-                  <table className="w-full k-table text-left border-collapse">
-                    <thead><tr>
-                      <th>Tipo</th><th>Cliente / Detalle</th>
-                      <th className="text-right">Monto</th>
-                      {config.habilitarPuntos && <th className="text-right">Puntos</th>}
-                      <th className="text-right">Hora</th>
-                    </tr></thead>
-                    <tbody>
-                      {[...transacciones].reverse().slice(0, 6).map(t => (
-                        <tr key={t.id} style={t.cancelada ? { opacity: 0.5 } : {}}>
-                          <td><CategoriaBadge cat={t.tipoNegocio} /></td>
-                          <td>
-                            <p className="font-medium k-text">
-                              {t.cliente?.nombre || 'Público General'}{' '}
-                              {t.cancelada && <span className="text-[9px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide">Cancelada</span>}
-                            </p>
-                            <p className="text-xs k-muted truncate max-w-xs">
-                              <span className="font-bold text-[9px] uppercase mr-1.5 px-1.5 py-0.5 rounded" style={{ background: 'var(--k-nav-hover)', color: 'var(--k-gold)' }}>
-                                {t.metodoPago || 'Efectivo'}
-                              </span>
-                              {t.comentarios || 'Sin notas'}
-                            </p>
-                          </td>
-                          <td className="text-right font-bold k-text" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>${Number(t.monto).toFixed(2)}</td>
-                          {config.habilitarPuntos && (
-                            <td className="text-right font-bold" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>
-                              {t.puntosGanados > 0 ? (
-                                <span style={{ color: 'var(--k-gold)' }}>+{t.puntosGanados}</span>
-                              ) : t.puntosGanados < 0 ? (
-                                <span style={{ color: '#f87171' }}>{t.puntosGanados}</span>
-                              ) : (
-                                <span className="opacity-40 font-normal k-muted">—</span>
-                              )}
+                  <div className="overflow-x-auto">
+                    <table className="w-full k-table text-left border-collapse">
+                      <thead><tr>
+                        <th>Tipo</th><th>Cliente / Detalle</th>
+                        <th className="text-right">Monto</th>
+                        {config.habilitarPuntos && <th className="text-right">Puntos</th>}
+                        <th className="text-right">Hora</th>
+                      </tr></thead>
+                      <tbody>
+                        {[...transacciones].reverse().slice(0, 6).map(t => (
+                          <tr key={t.id} style={t.cancelada ? { opacity: 0.5 } : {}}>
+                            <td><CategoriaBadge cat={t.tipoNegocio} /></td>
+                            <td>
+                              <p className="font-medium k-text">
+                                {t.cliente?.nombre || 'Público General'}{' '}
+                                {t.cancelada && <span className="text-[9px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide">Cancelada</span>}
+                              </p>
+                              <p className="text-xs k-muted truncate max-w-xs">
+                                <span className="font-bold text-[9px] uppercase mr-1.5 px-1.5 py-0.5 rounded" style={{ background: 'var(--k-nav-hover)', color: 'var(--k-gold)' }}>
+                                  {t.metodoPago || 'Efectivo'}
+                                </span>
+                                {t.comentarios || 'Sin notas'}
+                              </p>
                             </td>
-                          )}
-                          <td className="text-right text-xs k-muted">{new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <td className="text-right font-bold k-text" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>${Number(t.monto).toFixed(2)}</td>
+                            {config.habilitarPuntos && (
+                              <td className="text-right font-bold" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>
+                                {t.puntosGanados > 0 ? (
+                                  <span style={{ color: 'var(--k-gold)' }}>+{t.puntosGanados}</span>
+                                ) : t.puntosGanados < 0 ? (
+                                  <span style={{ color: '#f87171' }}>{t.puntosGanados}</span>
+                                ) : (
+                                  <span className="opacity-40 font-normal k-muted">—</span>
+                                )}
+                              </td>
+                            )}
+                            <td className="text-right text-xs k-muted">{new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Quick Actions */}
