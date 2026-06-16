@@ -175,6 +175,7 @@ fastify.get('/api/productos', async () => {
       nombre: p.nombre,
       precio: Number(p.precio),
       stock: p.stockActual,
+      stockMinimo: p.stockMinimo,
       categoria: 'ROPA' as const,
       factorPuntos: fRopa,
       codigoBarras: p.codigoBarras || undefined,
@@ -190,6 +191,7 @@ fastify.get('/api/productos', async () => {
       nombre: p.nombre,
       precio: Number(p.precioUnitario),
       stock: p.cantidadStock,
+      stockMinimo: p.puntoReorden,
       categoria: 'PAPELERIA' as const,
       factorPuntos: fPapeleria,
       codigoBarras: p.sku || undefined,
@@ -202,6 +204,7 @@ fastify.get('/api/productos', async () => {
       nombre: p.nombre,
       precio: Number(p.precioUnitario),
       stock: p.cantidadStock,
+      stockMinimo: p.puntoReorden,
       categoria: 'ABARROTES' as const,
       factorPuntos: fAbarrotes,
       codigoBarras: p.sku || undefined,
@@ -225,10 +228,11 @@ fastify.get('/api/productos', async () => {
 });
 
 fastify.post('/api/productos', async (request, reply) => {
-  const { nombre, precio, stock, categoria, codigoBarras, detalles } = request.body as {
+  const { nombre, precio, stock, stockMinimo, categoria, codigoBarras, detalles } = request.body as {
     nombre: string;
     precio: number;
     stock: number;
+    stockMinimo?: number;
     categoria: 'ROPA' | 'PAPELERIA' | 'ABARROTES' | 'SERVICIO';
     codigoBarras?: string;
     detalles?: any;
@@ -251,6 +255,7 @@ fastify.post('/api/productos', async (request, reply) => {
           nombre,
           precio,
           stockActual: stock || 1,
+          stockMinimo: stockMinimo ?? 0,
           codigoBarras,
           talla: detalles?.talla,
           color: detalles?.color,
@@ -264,6 +269,7 @@ fastify.post('/api/productos', async (request, reply) => {
         nombre: item.nombre,
         precio: Number(item.precio),
         stock: item.stockActual,
+        stockMinimo: item.stockMinimo,
         categoria: 'ROPA',
         factorPuntos: fRopa,
         codigoBarras: item.codigoBarras || undefined,
@@ -275,6 +281,7 @@ fastify.post('/api/productos', async (request, reply) => {
           nombre,
           precioUnitario: precio,
           cantidadStock: stock || 0,
+          puntoReorden: stockMinimo ?? 5,
           sku: codigoBarras,
         }
       });
@@ -283,6 +290,7 @@ fastify.post('/api/productos', async (request, reply) => {
         nombre: item.nombre,
         precio: Number(item.precioUnitario),
         stock: item.cantidadStock,
+        stockMinimo: item.puntoReorden,
         categoria: 'PAPELERIA',
         factorPuntos: fPapeleria,
         codigoBarras: item.sku || undefined,
@@ -294,6 +302,7 @@ fastify.post('/api/productos', async (request, reply) => {
           nombre,
           precioUnitario: precio,
           cantidadStock: stock || 0,
+          puntoReorden: stockMinimo ?? 5,
           sku: codigoBarras,
         }
       });
@@ -302,6 +311,7 @@ fastify.post('/api/productos', async (request, reply) => {
         nombre: item.nombre,
         precio: Number(item.precioUnitario),
         stock: item.cantidadStock,
+        stockMinimo: item.puntoReorden,
         categoria: 'ABARROTES',
         factorPuntos: fAbarrotes,
         codigoBarras: item.sku || undefined,
@@ -333,10 +343,11 @@ fastify.post('/api/productos', async (request, reply) => {
 
 fastify.put('/api/productos/:id', async (request, reply) => {
   const { id } = request.params as { id: string };
-  const { nombre, precio, stock, categoria, codigoBarras, detalles } = request.body as {
+  const { nombre, precio, stock, stockMinimo, categoria, codigoBarras, detalles } = request.body as {
     nombre: string;
     precio: number;
     stock: number;
+    stockMinimo?: number;
     categoria: 'ROPA' | 'PAPELERIA' | 'ABARROTES' | 'SERVICIO';
     codigoBarras?: string;
     detalles?: any;
@@ -354,6 +365,7 @@ fastify.put('/api/productos/:id', async (request, reply) => {
           nombre,
           precio,
           stockActual: stock,
+          stockMinimo: stockMinimo,
           codigoBarras,
           talla: detalles?.talla,
           color: detalles?.color,
@@ -365,6 +377,7 @@ fastify.put('/api/productos/:id', async (request, reply) => {
         nombre: item.nombre,
         precio: Number(item.precio),
         stock: item.stockActual,
+        stockMinimo: item.stockMinimo,
         categoria: 'ROPA',
         factorPuntos: fRopa,
         codigoBarras: item.codigoBarras || undefined,
@@ -377,6 +390,7 @@ fastify.put('/api/productos/:id', async (request, reply) => {
           nombre,
           precioUnitario: precio,
           cantidadStock: stock,
+          puntoReorden: stockMinimo,
           sku: codigoBarras,
         },
       });
@@ -385,6 +399,7 @@ fastify.put('/api/productos/:id', async (request, reply) => {
         nombre: item.nombre,
         precio: Number(item.precioUnitario),
         stock: item.cantidadStock,
+        stockMinimo: item.puntoReorden,
         categoria: 'PAPELERIA',
         factorPuntos: fPapeleria,
         codigoBarras: item.sku || undefined,
@@ -397,6 +412,7 @@ fastify.put('/api/productos/:id', async (request, reply) => {
           nombre,
           precioUnitario: precio,
           cantidadStock: stock,
+          puntoReorden: stockMinimo,
           sku: codigoBarras,
         },
       });
@@ -405,6 +421,7 @@ fastify.put('/api/productos/:id', async (request, reply) => {
         nombre: item.nombre,
         precio: Number(item.precioUnitario),
         stock: item.cantidadStock,
+        stockMinimo: item.puntoReorden,
         categoria: 'ABARROTES',
         factorPuntos: fAbarrotes,
         codigoBarras: item.sku || undefined,

@@ -214,7 +214,14 @@ function ProductModal({ title, form, setForm, onSubmit, onClose, config, submitL
             </div>
             <div className="space-y-1.5">
               <label className="text-xs k-muted font-semibold uppercase block">Categoría</label>
-              <select value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value as any })} className="k-select">
+              <select value={form.categoria} onChange={e => {
+                const cat = e.target.value as any;
+                let newMin = form.stockMinimo;
+                if (form.stockMinimo === '' || form.stockMinimo === '0' || form.stockMinimo === '5') {
+                  newMin = cat === 'ROPA' ? '0' : cat === 'SERVICIO' ? '' : '5';
+                }
+                setForm({ ...form, categoria: cat, stockMinimo: newMin });
+              }} className="k-select">
                 {config.habilitarRopa && <option value="ROPA">Ropa / Paca</option>}
                 {config.habilitarPapeleria && <option value="PAPELERIA">Papelería</option>}
                 {config.habilitarAbarrotes && <option value="ABARROTES">Abarrotes</option>}
@@ -233,6 +240,12 @@ function ProductModal({ title, form, setForm, onSubmit, onClose, config, submitL
               <label className="text-xs k-muted font-semibold uppercase block">Stock</label>
               <input type="number" required placeholder="1" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="k-input" />
             </div>
+            {form.categoria !== 'SERVICIO' && (
+              <div className="space-y-1.5">
+                <label className="text-xs k-muted font-semibold uppercase block">Stock Mínimo (Alerta)</label>
+                <input type="number" required placeholder={form.categoria === 'ROPA' ? '0' : '5'} value={form.stockMinimo} onChange={e => setForm({ ...form, stockMinimo: e.target.value })} className="k-input" />
+              </div>
+            )}
           </div>
           {form.categoria === 'ROPA' && (
             <div className="border-t grid grid-cols-2 gap-4 pt-4" style={{ borderColor: 'var(--k-border)' }}>
@@ -323,7 +336,7 @@ export default function App() {
 
   // Forms
   const [newClient, setNewClient] = useState({ nombre: '', telefono: '' });
-  const emptyProduct = { nombre: '', precio: '', stock: '', categoria: 'ROPA' as Producto['categoria'], factorPuntos: '0.1', codigoBarras: '', talla: '', color: '', estado: 'Nueva', marca: '' };
+  const emptyProduct = { nombre: '', precio: '', stock: '', stockMinimo: '', categoria: 'ROPA' as Producto['categoria'], factorPuntos: '0.1', codigoBarras: '', talla: '', color: '', estado: 'Nueva', marca: '' };
   const [newProduct,  setNewProduct]  = useState(emptyProduct);
   const [editProduct, setEditProduct] = useState(emptyProduct);
   const [editClient,  setEditClient]  = useState({ nombre: '', telefono: '' });
@@ -543,13 +556,19 @@ export default function App() {
   };
 
   // ── Handlers: Productos ─────────────────────────────────────────────────────
-  const buildProductPayload = (f: typeof emptyProduct) => ({
-    nombre: f.nombre, precio: parseFloat(f.precio), stock: parseInt(f.stock) || 0,
-    categoria: f.categoria, factorPuntos: parseFloat(f.factorPuntos),
-    codigoBarras: f.codigoBarras || undefined,
-    detalles: f.categoria === 'ROPA' ? { talla: f.talla, color: f.color, estado: f.estado, marca: f.marca }
-            : (f.categoria === 'PAPELERIA' || f.categoria === 'ABARROTES') ? { marca: f.marca } : undefined,
-  });
+  const buildProductPayload = (f: typeof emptyProduct) => {
+    const parseMin = parseInt(f.stockMinimo);
+    const defaultMin = f.categoria === 'ROPA' ? 0 : 5;
+    const stockMinimo = !isNaN(parseMin) ? parseMin : defaultMin;
+    return {
+      nombre: f.nombre, precio: parseFloat(f.precio), stock: parseInt(f.stock) || 0,
+      stockMinimo,
+      categoria: f.categoria, factorPuntos: parseFloat(f.factorPuntos),
+      codigoBarras: f.codigoBarras || undefined,
+      detalles: f.categoria === 'ROPA' ? { talla: f.talla, color: f.color, estado: f.estado, marca: f.marca }
+              : (f.categoria === 'PAPELERIA' || f.categoria === 'ABARROTES') ? { marca: f.marca } : undefined,
+    };
+  };
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -561,7 +580,7 @@ export default function App() {
         else triggerAlert('error', 'Error al guardar.');
       } catch { triggerAlert('error', 'Error de red.'); }
     } else {
-      setProductos(prev => [...prev, { id: prev.length + 1, ...payload, stockMinimo: 0 } as Producto]);
+      setProductos(prev => [...prev, { id: prev.length + 1, ...payload } as Producto]);
       triggerAlert('success', 'Producto agregado (offline).');
     }
     setShowAddProductModal(false); setNewProduct(emptyProduct);
@@ -1286,6 +1305,9 @@ export default function App() {
                             <span style={{ color: p.stock === 0 ? '#f87171' : low ? '#fb923c' : 'var(--k-text)' }}>
                               {p.stock === 9999 ? '∞' : p.stock}
                             </span>
+                            {p.stockMinimo !== undefined && p.categoria !== 'SERVICIO' && (
+                              <div className="text-[10px] k-muted font-normal mt-0.5">Mín: {p.stockMinimo}</div>
+                            )}
                           </td>
                           <td className="px-6 text-xs font-mono k-muted">{p.codigoBarras || '—'}</td>
                           <td className="px-6 text-xs k-muted">
@@ -1293,7 +1315,7 @@ export default function App() {
                           </td>
                           <td className="px-6 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => { setShowEditProductModal(p); setEditProduct({ nombre: p.nombre, precio: String(p.precio), stock: String(p.stock), categoria: p.categoria, factorPuntos: String(p.factorPuntos), codigoBarras: p.codigoBarras || '', talla: p.detalles?.talla||'', color: p.detalles?.color||'', estado: p.detalles?.estado||'Nueva', marca: p.detalles?.marca||'' }); }}
+                              <button onClick={() => { setShowEditProductModal(p); setEditProduct({ nombre: p.nombre, precio: String(p.precio), stock: String(p.stock), stockMinimo: p.stockMinimo !== undefined ? String(p.stockMinimo) : '', categoria: p.categoria, factorPuntos: String(p.factorPuntos), codigoBarras: p.codigoBarras || '', talla: p.detalles?.talla||'', color: p.detalles?.color||'', estado: p.detalles?.estado||'Nueva', marca: p.detalles?.marca||'' }); }}
                                 className="p-2 rounded-lg k-muted transition-all" style={{ background: 'var(--k-nav-hover)' }}>
                                 <Edit2 className="w-4 h-4" />
                               </button>
