@@ -491,6 +491,7 @@ fastify.get('/api/transacciones', async () => {
     comentarios: t.comentarios || t.tipoMovimiento,
     metodoEntrega: t.metodoEntrega,
     estatusEntrega: t.estatusEntrega,
+    metodoPago: t.metodoPago,
     createdAt: t.fecha,
     items: t.items || undefined,
     cancelada: t.cancelada
@@ -498,7 +499,7 @@ fastify.get('/api/transacciones', async () => {
 });
 
 fastify.post('/api/transacciones', async (request, reply) => {
-  const { clienteId, tipoNegocio, monto, puntosGanados, comentarios, items, metodoEntrega, estatusEntrega } = request.body as {
+  const { clienteId, tipoNegocio, monto, puntosGanados, comentarios, items, metodoEntrega, estatusEntrega, metodoPago } = request.body as {
     clienteId?: number;
     tipoNegocio: string;
     monto: number;
@@ -507,6 +508,7 @@ fastify.post('/api/transacciones', async (request, reply) => {
     items?: { id: number; categoria: 'ROPA' | 'PAPELERIA' | 'ABARROTES' | 'SERVICIO'; cantidad: number }[];
     metodoEntrega?: string;
     estatusEntrega?: string;
+    metodoPago?: string;
   };
   try {
     let negocio = await prisma.negocio.findFirst({ where: { nombre: tipoNegocio } });
@@ -566,6 +568,7 @@ fastify.post('/api/transacciones', async (request, reply) => {
         comentarios: comentarios || null,
         metodoEntrega: finalMetodo,
         estatusEntrega: estatusEntrega || (finalMetodo === 'Tienda' ? 'Entregado' : 'Pendiente'),
+        metodoPago: metodoPago || 'Efectivo',
         items: items ? (items as any) : undefined,
       },
     });
@@ -592,6 +595,7 @@ fastify.post('/api/transacciones', async (request, reply) => {
       comentarios: transaccion.comentarios || transaccion.tipoMovimiento,
       metodoEntrega: transaccion.metodoEntrega,
       estatusEntrega: transaccion.estatusEntrega,
+      metodoPago: transaccion.metodoPago,
       createdAt: transaccion.fecha,
       items: transaccion.items || undefined,
       cancelada: transaccion.cancelada
@@ -618,6 +622,7 @@ fastify.put('/api/transacciones/:id', async (request, reply) => {
       comentarios: updated.comentarios || updated.tipoMovimiento,
       metodoEntrega: updated.metodoEntrega,
       estatusEntrega: updated.estatusEntrega,
+      metodoPago: updated.metodoPago,
       createdAt: updated.fecha,
       items: updated.items || undefined,
       cancelada: updated.cancelada
@@ -716,6 +721,7 @@ fastify.post('/api/transacciones/:id/cancelar', async (request, reply) => {
       comentarios: updated.comentarios || updated.tipoMovimiento,
       metodoEntrega: updated.metodoEntrega,
       estatusEntrega: updated.estatusEntrega,
+      metodoPago: updated.metodoPago,
       createdAt: updated.fecha,
       items: updated.items || undefined,
       cancelada: updated.cancelada

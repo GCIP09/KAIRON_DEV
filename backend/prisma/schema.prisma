@@ -103,6 +103,7 @@ model TransaccionPuntos {
   comentarios     String?  @map("Comentarios")
   metodoEntrega   String   @default("Tienda") @map("MetodoEntrega") // "Tienda", "Retiro" o "Envio"
   estatusEntrega  String   @default("Entregado") @map("EstatusEntrega") // "Pendiente", "Preparado", "Enviado", "Entregado"
+  metodoPago      String   @default("Efectivo") @map("MetodoPago")
   fecha           DateTime @default(now()) @map("Fecha")
   items           Json?    @map("Items")
   cancelada       Boolean  @default(false) @map("Cancelada")

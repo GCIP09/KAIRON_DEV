@@ -63,6 +63,7 @@ interface Transaccion {
   monto: number; puntosGanados: number; comentarios?: string;
   metodoEntrega?: 'Tienda' | 'Retiro' | 'Envio';
   estatusEntrega?: 'Pendiente' | 'Preparado' | 'Enviado' | 'Entregado';
+  metodoPago?: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Mixto';
   createdAt: string;
   cancelada?: boolean;
   items?: any;
@@ -347,7 +348,8 @@ export default function App() {
     comentarios: '',
     puntosCanjeados: 0,
     metodoEntrega: 'Tienda' as 'Tienda' | 'Retiro' | 'Envio',
-    estatusEntrega: 'Entregado' as 'Pendiente' | 'Preparado' | 'Enviado' | 'Entregado'
+    estatusEntrega: 'Entregado' as 'Pendiente' | 'Preparado' | 'Enviado' | 'Entregado',
+    metodoPago: 'Efectivo' as 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Mixto'
   });
   const [cart, setCart] = useState<{ producto: Producto; cantidad: number }[]>([]);
   const [prodSearch, setProdSearch] = useState<string>('');
@@ -478,6 +480,10 @@ export default function App() {
   const ventasPapeleria= activeTransacciones.filter(t => t.tipoNegocio === 'PAPELERIA').reduce((a, t) => a + t.monto, 0);
   const ventasAbarrotes= activeTransacciones.filter(t => t.tipoNegocio === 'ABARROTES').reduce((a, t) => a + t.monto, 0);
   const ventasServicio = activeTransacciones.filter(t => t.tipoNegocio === 'SERVICIO').reduce((a, t) => a + t.monto, 0);
+  const totalEfectivo  = activeTransacciones.filter(t => (t.metodoPago || 'Efectivo') === 'Efectivo').reduce((a, t) => a + Number(t.monto), 0);
+  const totalTarjeta   = activeTransacciones.filter(t => t.metodoPago === 'Tarjeta').reduce((a, t) => a + Number(t.monto), 0);
+  const totalTransf    = activeTransacciones.filter(t => t.metodoPago === 'Transferencia').reduce((a, t) => a + Number(t.monto), 0);
+  const totalMixto     = activeTransacciones.filter(t => t.metodoPago === 'Mixto').reduce((a, t) => a + Number(t.monto), 0);
   const productosBajoStock = productos.filter(p => p.stockMinimo !== undefined && p.stock <= p.stockMinimo && p.stock !== 9999);
 
   const filteredProducts = productos.filter(p => {
@@ -839,7 +845,8 @@ export default function App() {
       comentarios: comentariosFinales,
       items: payloadItems,
       metodoEntrega: newSale.metodoEntrega,
-      estatusEntrega: newSale.estatusEntrega
+      estatusEntrega: newSale.estatusEntrega,
+      metodoPago: newSale.metodoPago
     };
 
     showConfirm({
@@ -869,6 +876,7 @@ export default function App() {
                   monto: 0,
                   puntosGanados: -puntosCanjeados,
                   comentarios: `Canje: -${puntosCanjeados} pts = -$${(puntosCanjeados * config.valorPuntoDescuento).toFixed(2)} descuento`,
+                  metodoPago: newSale.metodoPago,
                 }),
               });
             }
@@ -908,8 +916,9 @@ export default function App() {
           monto: '',
           comentarios: '',
           puntosCanjeados: 0,
-          metodoEntrega: 'Retiro',
-          estatusEntrega: 'Entregado'
+          metodoEntrega: 'Tienda',
+          estatusEntrega: 'Entregado',
+          metodoPago: 'Efectivo'
         });
         setCart([]);
         setProdSearch('');
@@ -1152,7 +1161,12 @@ export default function App() {
                               {t.cliente?.nombre || 'Público General'}{' '}
                               {t.cancelada && <span className="text-[9px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide">Cancelada</span>}
                             </p>
-                            <p className="text-xs k-muted truncate max-w-xs">{t.comentarios || 'Sin notas'}</p>
+                            <p className="text-xs k-muted truncate max-w-xs">
+                              <span className="font-bold text-[9px] uppercase mr-1.5 px-1.5 py-0.5 rounded" style={{ background: 'var(--k-nav-hover)', color: 'var(--k-gold)' }}>
+                                {t.metodoPago || 'Efectivo'}
+                              </span>
+                              {t.comentarios || 'Sin notas'}
+                            </p>
                           </td>
                           <td className="text-right font-bold k-text" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>${Number(t.monto).toFixed(2)}</td>
                           {config.habilitarPuntos && (
@@ -1408,7 +1422,8 @@ export default function App() {
                             comentarios: '',
                             puntosCanjeados: 0,
                             metodoEntrega: 'Tienda',
-                            estatusEntrega: 'Entregado'
+                            estatusEntrega: 'Entregado',
+                            metodoPago: 'Efectivo'
                           });
                           setProdSearch('');
                         }}
@@ -1816,6 +1831,53 @@ export default function App() {
                         )}
                       </div>
 
+                      {/* Método de Pago */}
+                      <div className="rounded-xl p-4 space-y-3 border" style={{ background: 'var(--k-panel-bg)', borderColor: 'var(--k-border)' }}>
+                        <label className="text-[10px] k-muted font-bold uppercase tracking-wider block">Método de Pago</label>
+                        <div className="flex gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setNewSale({ ...newSale, metodoPago: 'Efectivo' })}
+                            className="flex-1 text-[11px] py-2 px-1 rounded-lg font-bold border transition-all truncate"
+                            style={newSale.metodoPago === 'Efectivo'
+                              ? { background: 'var(--k-gold)', color: '#fff', borderColor: 'var(--k-gold)' }
+                              : { background: 'var(--k-nav-hover)', color: 'var(--k-muted)', borderColor: 'var(--k-border)' }}
+                          >
+                            💵 Efectivo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNewSale({ ...newSale, metodoPago: 'Tarjeta' })}
+                            className="flex-1 text-[11px] py-2 px-1 rounded-lg font-bold border transition-all truncate"
+                            style={newSale.metodoPago === 'Tarjeta'
+                              ? { background: 'var(--k-gold)', color: '#fff', borderColor: 'var(--k-gold)' }
+                              : { background: 'var(--k-nav-hover)', color: 'var(--k-muted)', borderColor: 'var(--k-border)' }}
+                          >
+                            💳 Tarjeta
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNewSale({ ...newSale, metodoPago: 'Transferencia' })}
+                            className="flex-1 text-[11px] py-2 px-1 rounded-lg font-bold border transition-all truncate"
+                            style={newSale.metodoPago === 'Transferencia'
+                              ? { background: 'var(--k-gold)', color: '#fff', borderColor: 'var(--k-gold)' }
+                              : { background: 'var(--k-nav-hover)', color: 'var(--k-muted)', borderColor: 'var(--k-border)' }}
+                          >
+                            📲 SPEI / Transf.
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNewSale({ ...newSale, metodoPago: 'Mixto' })}
+                            className="flex-1 text-[11px] py-2 px-1 rounded-lg font-bold border transition-all truncate"
+                            style={newSale.metodoPago === 'Mixto'
+                              ? { background: 'var(--k-gold)', color: '#fff', borderColor: 'var(--k-gold)' }
+                              : { background: 'var(--k-nav-hover)', color: 'var(--k-muted)', borderColor: 'var(--k-border)' }}
+                          >
+                            🔄 Pago Mixto
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Resumen de Totales */}
                       <div className="rounded-xl p-4 space-y-2.5 border" style={{ background: 'var(--k-panel-bg)', borderColor: 'var(--k-border)' }}>
                         <div className="flex justify-between text-sm">
@@ -1881,7 +1943,7 @@ export default function App() {
                   <div className="overflow-x-auto">
                     <table className="w-full k-table text-left border-collapse">
                       <thead><tr>
-                        <th>ID</th><th>Tipo</th><th>Cliente</th><th>Entrega</th><th>Notas</th>
+                        <th>ID</th><th>Tipo</th><th>Cliente</th><th>Entrega</th><th>Pago</th><th>Notas</th>
                         <th className="text-right">Monto</th>
                         {config.habilitarPuntos && <th className="text-right">Puntos</th>}
                         <th className="text-right">Fecha</th>
@@ -1933,6 +1995,14 @@ export default function App() {
                                   </select>
                                 </div>
                               )}
+                            </td>
+                            <td>
+                              <span className="text-[11px] font-bold k-text flex items-center gap-1">
+                                {(t.metodoPago || 'Efectivo') === 'Efectivo' ? '💵 Efectivo'
+                                 : t.metodoPago === 'Tarjeta' ? '💳 Tarjeta'
+                                 : t.metodoPago === 'Transferencia' ? '📲 Transf.'
+                                 : '🔄 Mixto'}
+                              </span>
                             </td>
                             <td className="k-muted text-xs max-w-sm truncate" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>{t.comentarios || '—'}</td>
                             <td className="text-right font-bold k-text" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>${Number(t.monto).toFixed(2)}</td>
@@ -2075,6 +2145,12 @@ export default function App() {
                             <td><CategoriaBadge cat={t.tipoNegocio} /></td>
                             <td className="k-muted text-xs">
                               {t.cancelada && <span className="text-rose-400 font-extrabold mr-1">[CANCELADA]</span>}
+                              <span className="block text-[10px] k-muted mt-0.5">
+                                Pago: {(t.metodoPago || 'Efectivo') === 'Efectivo' ? '💵 Efectivo'
+                                       : t.metodoPago === 'Tarjeta' ? '💳 Tarjeta'
+                                       : t.metodoPago === 'Transferencia' ? '📲 Transferencia'
+                                       : '🔄 Pago Mixto'}
+                              </span>
                               {t.comentarios || '—'}
                               {((t.metodoEntrega || 'Tienda') === 'Tienda') && (
                                 <span className="block text-[10px] text-emerald-400 font-semibold mt-0.5">
@@ -2135,9 +2211,9 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className={`grid grid-cols-1 gap-6 ${config.habilitarPuntos ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
                 {/* Bar chart */}
-                <div className={`glass-panel p-6 rounded-2xl space-y-5 ${!config.habilitarPuntos ? 'lg:col-span-2' : ''}`}>
+                <div className="glass-panel p-6 rounded-2xl space-y-5">
                   <div>
                     <h4 className="font-bold text-lg k-text">Ventas por Tipo</h4>
                     <p className="text-xs k-muted">Total acumulado por categoría</p>
@@ -2165,6 +2241,42 @@ export default function App() {
                         <span className="text-sm font-bold k-text w-20 text-right">${row.value.toFixed(2)}</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Métodos de Pago */}
+                <div className="glass-panel p-6 rounded-2xl space-y-5">
+                  <div>
+                    <h4 className="font-bold text-lg k-text">Métodos de Pago</h4>
+                    <p className="text-xs k-muted">Distribución de ingresos por canal</p>
+                  </div>
+                  <MiniBarChart data={[
+                    totalEfectivo > 0 && { label: 'Efectivo', value: totalEfectivo, color: 'linear-gradient(135deg,var(--k-green),color-mix(in srgb,var(--k-green) 70%,#fff))' },
+                    totalTarjeta > 0 && { label: 'Tarjeta', value: totalTarjeta, color: 'linear-gradient(135deg,var(--k-indigo),color-mix(in srgb,var(--k-indigo) 70%,#fff))' },
+                    totalTransf > 0 && { label: 'Transferencia', value: totalTransf, color: 'linear-gradient(135deg,var(--k-teal),color-mix(in srgb,var(--k-teal) 70%,#fff))' },
+                    totalMixto > 0 && { label: 'Mixto', value: totalMixto, color: 'linear-gradient(135deg,var(--k-gold),color-mix(in srgb,var(--k-gold) 70%,#fff))' },
+                  ].filter(Boolean) as { label: string; value: number; color: string }[]} />
+                  <div className="space-y-3 pt-2">
+                    {[
+                      { label: 'Efectivo', value: totalEfectivo, emoji: '💵', color: 'var(--k-green)' },
+                      { label: 'Tarjeta', value: totalTarjeta, emoji: '💳', color: 'var(--k-indigo)' },
+                      { label: 'Transferencia', value: totalTransf, emoji: '📲', color: 'var(--k-teal)' },
+                      { label: 'Mixto', value: totalMixto, emoji: '🔄', color: 'var(--k-gold)' },
+                    ].map((row, i) => {
+                      const totalTodos = totalEfectivo + totalTarjeta + totalTransf + totalMixto;
+                      const pct = totalTodos > 0 ? (row.value / totalTodos * 100).toFixed(1) : '0';
+                      return (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="text-sm shrink-0">{row.emoji}</span>
+                          <span className="text-sm k-muted w-24">{row.label}</span>
+                          <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--k-nav-hover)' }}>
+                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: row.color }} />
+                          </div>
+                          <span className="text-xs k-muted w-10 text-right">{pct}%</span>
+                          <span className="text-sm font-bold k-text w-20 text-right">${row.value.toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
