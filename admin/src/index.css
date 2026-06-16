@@ -382,6 +382,87 @@
   }
   .k-table td.muted { color: var(--k-muted); }
 
+  /* ── Filtros de columna ───────────────────────────────────────────────────── */
+  .k-table-filter th {
+    padding: 0.35rem 1.5rem;
+    border-bottom: 1px solid var(--k-border);
+    background-color: color-mix(in srgb, var(--k-input-bg) 80%, transparent);
+  }
+  .k-table-filter input {
+    width: 100%;
+    min-width: 60px;
+    background: var(--k-input-bg);
+    border: 1px solid var(--k-border);
+    border-radius: 0.4rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.68rem;
+    color: var(--k-text);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.15s ease;
+    font-family: inherit;
+  }
+  .k-table-filter input:focus {
+    border-color: var(--k-gold);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--k-gold) 12%, transparent);
+  }
+  .k-table-filter input::placeholder { color: var(--k-muted); opacity: 0.7; }
+
+  /* ── Paginador ───────────────────────────────────────────────────────────── */
+  .k-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1rem;
+    border-top: 1px solid var(--k-border);
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    background-color: color-mix(in srgb, var(--k-input-bg) 50%, transparent);
+    border-radius: 0 0 1rem 1rem;
+  }
+  .k-pager-info { font-size: 0.72rem; color: var(--k-muted); white-space: nowrap; }
+  .k-pager-pages { display: flex; align-items: center; gap: 0.3rem; }
+  .k-pager-btn {
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.35rem;
+    border-radius: 0.45rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid var(--k-border);
+    background: var(--k-nav-hover);
+    color: var(--k-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .k-pager-btn:hover:not(:disabled) {
+    border-color: var(--k-gold);
+    color: var(--k-gold);
+    background: color-mix(in srgb, var(--k-gold) 8%, transparent);
+  }
+  .k-pager-btn.active {
+    background: linear-gradient(135deg, var(--k-gold), var(--k-gold-dark));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--k-gold) 30%, transparent);
+  }
+  .k-pager-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .k-pager-select {
+    background: var(--k-input-bg);
+    border: 1px solid var(--k-border);
+    border-radius: 0.4rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.72rem;
+    color: var(--k-text);
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .k-pager-select:focus { border-color: var(--k-gold); }
+
   /* ── Badge de categoría (temático) ──────────────────────────────────────── */
   .badge-paca {
     background-color: color-mix(in srgb, var(--k-gold) 12%, transparent);

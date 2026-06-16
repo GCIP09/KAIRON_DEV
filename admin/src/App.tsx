@@ -81,6 +81,78 @@ function CategoriaBadge({ cat }: { cat: string }) {
   return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${cls}`}>{cat}</span>;
 }
 
+
+// ── Hook reutilizable de paginación y filtros por columna ──────────────────
+function useTableState(defaultPageSize = 10) {
+  const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(defaultPageSize);
+  const [colFilters, setColFilters] = React.useState<Record<string, string>>({});
+
+  const setColFilter = (col: string, val: string) => {
+    setColFilters(prev => ({ ...prev, [col]: val }));
+    setPage(1);
+  };
+  const clearFilters = () => { setColFilters({}); setPage(1); };
+  const resetPage = () => setPage(1);
+
+  function paginate<T>(data: T[]): { items: T[]; total: number; pages: number } {
+    const total = data.length;
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(page, pages);
+    const start = (safePage - 1) * pageSize;
+    return { items: data.slice(start, start + pageSize), total, pages };
+  }
+
+  return { page, setPage, pageSize, setPageSize, colFilters, setColFilter, clearFilters, resetPage, paginate };
+}
+
+// ── Paginador premium ──────────────────────────────────────────────────────
+function TablePager({
+  page, pageSize, total, onPage, onPageSize
+}: {
+  page: number; pageSize: number; total: number;
+  onPage: (p: number) => void; onPageSize: (s: number) => void;
+}) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, total);
+
+  const pageNums = (): (number | '...')[] => {
+    if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+    const arr: (number | '...')[] = [1];
+    if (page > 3) arr.push('...');
+    for (let i = Math.max(2, page - 1); i <= Math.min(pages - 1, page + 1); i++) arr.push(i);
+    if (page < pages - 2) arr.push('...');
+    arr.push(pages);
+    return arr;
+  };
+
+  return (
+    <div className="k-pager">
+      <span className="k-pager-info">
+        {total === 0 ? 'Sin registros' : `Mostrando ${start}–${end} de ${total}`}
+      </span>
+      <div className="k-pager-pages">
+        <button className="k-pager-btn" disabled={page <= 1} onClick={() => onPage(page - 1)}>←</button>
+        {pageNums().map((n, i) =>
+          n === '...'
+            ? <span key={`e${i}`} className="text-xs k-muted px-0.5">…</span>
+            : <button key={n} className={`k-pager-btn${page === n ? ' active' : ''}`} onClick={() => onPage(n as number)}>{n}</button>
+        )}
+        <button className="k-pager-btn" disabled={page >= pages} onClick={() => onPage(page + 1)}>→</button>
+      </div>
+      <select
+        className="k-pager-select"
+        value={pageSize}
+        onChange={e => { onPageSize(Number(e.target.value)); onPage(1); }}
+        style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}
+      >
+        {[10, 25, 50, 100].map(s => <option key={s} value={s} style={{ background: 'var(--k-input-bg)' }}>{s} por pág.</option>)}
+      </select>
+    </div>
+  );
+}
+
 function MiniBarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
   const max = Math.max(...data.map(d => d.value), 1);
   return (
@@ -386,6 +458,12 @@ export default function App() {
 
   const clientSelectRef = useRef<HTMLDivElement>(null);
   const productSelectRef = useRef<HTMLDivElement>(null);
+
+  // ── Estados de paginación y filtros por tabla ─────────────────────────────
+  const prodTable    = useTableState(10);  // Inventario de Productos
+  const cajaTable    = useTableState(10);  // Detalle Completo de Caja
+  const clientTable  = useTableState(10);  // Lista de Clientes
+  const histTable    = useTableState(10);  // Historial de Compras del Cliente
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -1242,7 +1320,7 @@ export default function App() {
                         <th className="text-right">Hora</th>
                       </tr></thead>
                       <tbody>
-                        {[...transacciones].reverse().slice(0, 6).map(t => (
+                        {[...transacciones].reverse().slice(0, 10).map(t => (
                           <tr key={t.id} style={t.cancelada ? { opacity: 0.5 } : {}}>
                             <td><CategoriaBadge cat={t.tipoNegocio} /></td>
                             <td>
@@ -1385,59 +1463,101 @@ export default function App() {
                 </button>
               </div>
               <div className="glass-panel rounded-2xl overflow-hidden">
-                <table className="w-full k-table text-left border-collapse">
-                  <thead><tr>
-                    <th className="px-6">Producto</th><th className="px-6">Categoría</th>
-                    <th className="px-6 text-right">Precio</th><th className="px-6 text-right">Stock</th>
-                    <th className="px-6">Código</th><th className="px-6">Detalles</th>
-                    <th className="px-6 text-right">Acciones</th>
-                  </tr></thead>
-                  <tbody>
-                    {filteredProducts.map(p => {
-                      const low = p.stockMinimo !== undefined && p.stock <= p.stockMinimo && p.stock !== 9999;
-                      return (
-                        <tr key={p.id} style={low ? { background: 'rgba(248,113,113,0.04)' } : {}}>
-                          <td className="px-6">
-                            <div className="flex items-center gap-2">
-                              {low && <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: '#f87171' }} />}
-                              <span className="font-bold k-text">{p.nombre}</span>
-                            </div>
-                          </td>
-                          <td className="px-6"><CategoriaBadge cat={p.categoria} /></td>
-                          <td className="px-6 text-right font-bold k-text">${p.precio}</td>
-                          <td className="px-6 text-right font-semibold">
-                            <span style={{ color: p.stock === 0 ? '#f87171' : low ? '#fb923c' : 'var(--k-text)' }}>
-                              {p.stock === 9999 ? '∞' : p.stock}
-                            </span>
-                            {p.stockMinimo !== undefined && p.categoria !== 'SERVICIO' && (
-                              <div className="text-[10px] k-muted font-normal mt-0.5">Mín: {p.stockMinimo}</div>
-                            )}
-                          </td>
-                          <td className="px-6 text-xs font-mono k-muted">{p.codigoBarras || '—'}</td>
-                          <td className="px-6 text-xs k-muted">
-                            {p.categoria === 'ROPA' && p.detalles ? `T:${p.detalles.talla} · ${p.detalles.color} · ${p.detalles.estado}` : p.detalles?.marca || '—'}
-                          </td>
-                          <td className="px-6 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => { setShowEditProductModal(p); setEditProduct({ nombre: p.nombre, precio: String(p.precio), stock: String(p.stock), stockMinimo: p.stockMinimo !== undefined ? String(p.stockMinimo) : '', categoria: p.categoria, factorPuntos: String(p.factorPuntos), codigoBarras: p.codigoBarras || '', talla: p.detalles?.talla||'', color: p.detalles?.color||'', estado: p.detalles?.estado||'Nueva', marca: p.detalles?.marca||'' }); }}
-                                className="p-2 rounded-lg k-muted transition-all" style={{ background: 'var(--k-nav-hover)' }}>
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => handleDeleteProduct(p.id, p.categoria)}
-                                className="p-2 rounded-lg transition-all" style={{ background: 'rgba(248,113,113,0.08)', color: '#f87171' }}>
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {filteredProducts.length === 0 && (
-                      <tr><td colSpan={7} className="px-6 py-12 text-center k-muted">No se encontraron productos.</td></tr>
-                    )}
-                  </tbody>
-                </table>
+                {(() => {
+                  const cf = prodTable.colFilters;
+                  const prodFiltered = filteredProducts.filter(p => {
+                    if (cf.nombre && !p.nombre.toLowerCase().includes(cf.nombre.toLowerCase())) return false;
+                    if (cf.categoria && !p.categoria.toLowerCase().includes(cf.categoria.toLowerCase())) return false;
+                    if (cf.precio && !String(p.precio).includes(cf.precio)) return false;
+                    if (cf.stock && !String(p.stock === 9999 ? '∞' : p.stock).includes(cf.stock)) return false;
+                    if (cf.codigo && !(p.codigoBarras || '').toLowerCase().includes(cf.codigo.toLowerCase())) return false;
+                    if (cf.detalles) {
+                      const det = p.categoria === 'ROPA' && p.detalles
+                        ? `${p.detalles.talla} ${p.detalles.color} ${p.detalles.estado}`
+                        : p.detalles?.marca || '';
+                      if (!det.toLowerCase().includes(cf.detalles.toLowerCase())) return false;
+                    }
+                    return true;
+                  });
+                  const { items: prodPage, total: prodTotal } = prodTable.paginate(prodFiltered);
+                  return (
+                    <>
+                      <div className="overflow-x-auto">
+                        <div className="max-h-[560px] overflow-y-auto">
+                          <table className="w-full k-table text-left border-collapse">
+                            <thead className="sticky top-0 z-10" style={{ background: 'var(--k-glass)' }}>
+                              <tr>
+                                <th className="px-6">Producto</th><th className="px-6">Categoría</th>
+                                <th className="px-6 text-right">Precio</th><th className="px-6 text-right">Stock</th>
+                                <th className="px-6">Código</th><th className="px-6">Detalles</th>
+                                <th className="px-6 text-right">Acciones</th>
+                              </tr>
+                              <tr className="k-table-filter">
+                                <th><input placeholder="Filtrar nombre…" value={cf.nombre || ''} onChange={e => prodTable.setColFilter('nombre', e.target.value)} /></th>
+                                <th><input placeholder="Categoría…" value={cf.categoria || ''} onChange={e => prodTable.setColFilter('categoria', e.target.value)} /></th>
+                                <th><input placeholder="Precio…" value={cf.precio || ''} onChange={e => prodTable.setColFilter('precio', e.target.value)} /></th>
+                                <th><input placeholder="Stock…" value={cf.stock || ''} onChange={e => prodTable.setColFilter('stock', e.target.value)} /></th>
+                                <th><input placeholder="Código…" value={cf.codigo || ''} onChange={e => prodTable.setColFilter('codigo', e.target.value)} /></th>
+                                <th><input placeholder="Detalles…" value={cf.detalles || ''} onChange={e => prodTable.setColFilter('detalles', e.target.value)} /></th>
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {prodPage.map(p => {
+                                const low = p.stockMinimo !== undefined && p.stock <= p.stockMinimo && p.stock !== 9999;
+                                return (
+                                  <tr key={p.id} style={low ? { background: 'rgba(248,113,113,0.04)' } : {}}>
+                                    <td className="px-6">
+                                      <div className="flex items-center gap-2">
+                                        {low && <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: '#f87171' }} />}
+                                        <span className="font-bold k-text">{p.nombre}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6"><CategoriaBadge cat={p.categoria} /></td>
+                                    <td className="px-6 text-right font-bold k-text">${p.precio}</td>
+                                    <td className="px-6 text-right font-semibold">
+                                      <span style={{ color: p.stock === 0 ? '#f87171' : low ? '#fb923c' : 'var(--k-text)' }}>
+                                        {p.stock === 9999 ? '∞' : p.stock}
+                                      </span>
+                                      {p.stockMinimo !== undefined && p.categoria !== 'SERVICIO' && (
+                                        <div className="text-[10px] k-muted font-normal mt-0.5">Mín: {p.stockMinimo}</div>
+                                      )}
+                                    </td>
+                                    <td className="px-6 text-xs font-mono k-muted">{p.codigoBarras || '—'}</td>
+                                    <td className="px-6 text-xs k-muted">
+                                      {p.categoria === 'ROPA' && p.detalles ? `T:${p.detalles.talla} · ${p.detalles.color} · ${p.detalles.estado}` : p.detalles?.marca || '—'}
+                                    </td>
+                                    <td className="px-6 text-right">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <button onClick={() => { setShowEditProductModal(p); setEditProduct({ nombre: p.nombre, precio: String(p.precio), stock: String(p.stock), stockMinimo: p.stockMinimo !== undefined ? String(p.stockMinimo) : '', categoria: p.categoria, factorPuntos: String(p.factorPuntos), codigoBarras: p.codigoBarras || '', talla: p.detalles?.talla||'', color: p.detalles?.color||'', estado: p.detalles?.estado||'Nueva', marca: p.detalles?.marca||'' }); }}
+                                          className="p-2 rounded-lg k-muted transition-all" style={{ background: 'var(--k-nav-hover)' }}>
+                                          <Edit2 className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => handleDeleteProduct(p.id, p.categoria)}
+                                          className="p-2 rounded-lg transition-all" style={{ background: 'rgba(248,113,113,0.08)', color: '#f87171' }}>
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              {prodPage.length === 0 && (
+                                <tr><td colSpan={7} className="px-6 py-12 text-center k-muted">No se encontraron productos.</td></tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <TablePager
+                        page={prodTable.page} pageSize={prodTable.pageSize} total={prodTotal}
+                        onPage={prodTable.setPage} onPageSize={prodTable.setPageSize}
+                      />
+                    </>
+                  );
+                })()}
               </div>
+
             </div>
           )}
 
@@ -2028,105 +2148,148 @@ export default function App() {
                 </div>
 
                 {/* Detalle Completo de Caja (Historial) */}
-                <div className="glass-panel p-6 rounded-2xl">
-                  <h4 className="font-bold text-lg k-text mb-6">Detalle Completo de Caja</h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full k-table text-left border-collapse">
-                      <thead><tr>
-                        <th>ID</th><th>Tipo</th><th>Cliente</th><th>Entrega</th><th>Pago</th><th>Notas</th>
-                        <th className="text-right">Monto</th>
-                        {config.habilitarPuntos && <th className="text-right">Puntos</th>}
-                        <th className="text-right">Fecha</th>
-                        <th className="text-right">Acción</th>
-                      </tr></thead>
-                      <tbody>
-                        {[...transacciones].reverse().map(t => (
-                          <tr key={t.id} style={t.cancelada ? { opacity: 0.6 } : {}}>
-                            <td className="font-mono k-muted text-xs">#{t.id}</td>
-                            <td><CategoriaBadge cat={t.tipoNegocio} /></td>
-                            <td className="font-medium k-text">
-                              {t.cliente?.nombre || 'Público General'}{' '}
-                              {t.cancelada && <span className="text-[9px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide">Cancelada</span>}
-                            </td>
-                            <td>
-                              {(t.metodoEntrega || 'Tienda') === 'Tienda' ? (
-                                <span className="text-[11px] k-muted font-medium flex items-center gap-1">
-                                  <span>🛍️ En Tienda</span>
-                                </span>
-                              ) : (t.metodoEntrega === 'Envio') ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[11px] font-semibold text-sky-400">🚚</span>
-                                  <select
-                                    value={t.estatusEntrega || 'Pendiente'}
-                                    disabled={t.cancelada}
-                                    onChange={e => handleUpdateDeliveryStatus(t.id, e.target.value)}
-                                    className="border rounded px-1.5 py-0.5 text-[10px] font-bold focus:outline-none cursor-pointer transition-all"
-                                    style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)', borderColor: 'var(--k-border)' }}
-                                  >
-                                    <option value="Pendiente" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>⏳ Pendiente</option>
-                                    <option value="Preparado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>📦 Preparado</option>
-                                    <option value="Enviado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>🚚 Enviado</option>
-                                    <option value="Entregado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>✅ Entregado</option>
-                                  </select>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[11px] font-semibold text-purple-400">🏪</span>
-                                  <select
-                                    value={t.estatusEntrega || 'Pendiente'}
-                                    disabled={t.cancelada}
-                                    onChange={e => handleUpdateDeliveryStatus(t.id, e.target.value)}
-                                    className="border rounded px-1.5 py-0.5 text-[10px] font-bold focus:outline-none cursor-pointer transition-all"
-                                    style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)', borderColor: 'var(--k-border)' }}
-                                  >
-                                    <option value="Pendiente" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>⏳ Pendiente</option>
-                                    <option value="Preparado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>📦 Preparado</option>
-                                    <option value="Entregado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>✅ Entregado</option>
-                                  </select>
-                                </div>
-                              )}
-                            </td>
-                            <td>
-                              <span className="text-[11px] font-bold k-text flex items-center gap-1">
-                                {(t.metodoPago || 'Efectivo') === 'Efectivo' ? '💵 Efectivo'
-                                 : t.metodoPago === 'Tarjeta' ? '💳 Tarjeta'
-                                 : t.metodoPago === 'Transferencia' ? '📲 Transf.'
-                                 : '🔄 Mixto'}
-                              </span>
-                            </td>
-                            <td className="k-muted text-xs max-w-sm truncate" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>{t.comentarios || '—'}</td>
-                            <td className="text-right font-bold k-text" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>${Number(t.monto).toFixed(2)}</td>
-                            {config.habilitarPuntos && (
-                              <td className="text-right font-bold" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>
-                                {t.puntosGanados > 0 ? (
-                                  <span style={{ color: 'var(--k-gold)' }}>+{t.puntosGanados}</span>
-                                ) : t.puntosGanados < 0 ? (
-                                  <span style={{ color: '#f87171' }}>{t.puntosGanados}</span>
-                                ) : (
-                                  <span className="opacity-40 font-normal k-muted">—</span>
-                                )}
-                              </td>
-                            )}
-                            <td className="text-right text-xs k-muted" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>{new Date(t.createdAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                            <td className="text-right">
-                              {t.cancelada ? (
-                                <span className="text-xs k-muted italic">Cancelada</span>
-                              ) : (
-                                <button
-                                  onClick={() => setTxToCancel(t)}
-                                  className="text-xs text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded transition-all"
-                                  style={{ background: 'rgba(244,63,94,0.1)' }}
-                                >
-                                  Cancelar
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="glass-panel rounded-2xl overflow-hidden">
+                  <div className="p-6 pb-4">
+                    <h4 className="font-bold text-lg k-text">Detalle Completo de Caja</h4>
                   </div>
+                  {(() => {
+                    const cf = cajaTable.colFilters;
+                    const cajaData = [...transacciones].reverse();
+                    const cajaFiltered = cajaData.filter(t => {
+                      if (cf.id && !String(t.id).includes(cf.id)) return false;
+                      if (cf.tipo && !t.tipoNegocio.toLowerCase().includes(cf.tipo.toLowerCase())) return false;
+                      if (cf.cliente && !(t.cliente?.nombre || 'Público General').toLowerCase().includes(cf.cliente.toLowerCase())) return false;
+                      if (cf.pago && !(t.metodoPago || 'Efectivo').toLowerCase().includes(cf.pago.toLowerCase())) return false;
+                      if (cf.monto && !String(Number(t.monto).toFixed(2)).includes(cf.monto)) return false;
+                      return true;
+                    });
+                    const { items: cajaPage, total: cajaTotal } = cajaTable.paginate(cajaFiltered);
+                    const colCount = config.habilitarPuntos ? 10 : 9;
+                    return (
+                      <>
+                        <div className="overflow-x-auto">
+                          <div className="max-h-[560px] overflow-y-auto">
+                            <table className="w-full k-table text-left border-collapse">
+                              <thead className="sticky top-0 z-10" style={{ background: 'var(--k-glass)' }}>
+                                <tr>
+                                  <th>ID</th><th>Tipo</th><th>Cliente</th><th>Entrega</th><th>Pago</th><th>Notas</th>
+                                  <th className="text-right">Monto</th>
+                                  {config.habilitarPuntos && <th className="text-right">Puntos</th>}
+                                  <th className="text-right">Fecha</th>
+                                  <th className="text-right">Acción</th>
+                                </tr>
+                                <tr className="k-table-filter">
+                                  <th><input placeholder="ID…" value={cf.id || ''} onChange={e => cajaTable.setColFilter('id', e.target.value)} /></th>
+                                  <th><input placeholder="Tipo…" value={cf.tipo || ''} onChange={e => cajaTable.setColFilter('tipo', e.target.value)} /></th>
+                                  <th><input placeholder="Cliente…" value={cf.cliente || ''} onChange={e => cajaTable.setColFilter('cliente', e.target.value)} /></th>
+                                  <th></th>
+                                  <th><input placeholder="Pago…" value={cf.pago || ''} onChange={e => cajaTable.setColFilter('pago', e.target.value)} /></th>
+                                  <th></th>
+                                  <th><input placeholder="Monto…" value={cf.monto || ''} onChange={e => cajaTable.setColFilter('monto', e.target.value)} /></th>
+                                  {config.habilitarPuntos && <th></th>}
+                                  <th></th><th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cajaPage.map(t => (
+                                  <tr key={t.id} style={t.cancelada ? { opacity: 0.6 } : {}}>
+                                    <td className="font-mono k-muted text-xs">#{t.id}</td>
+                                    <td><CategoriaBadge cat={t.tipoNegocio} /></td>
+                                    <td className="font-medium k-text">
+                                      {t.cliente?.nombre || 'Público General'}{' '}
+                                      {t.cancelada && <span className="text-[9px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide">Cancelada</span>}
+                                    </td>
+                                    <td>
+                                      {(t.metodoEntrega || 'Tienda') === 'Tienda' ? (
+                                        <span className="text-[11px] k-muted font-medium flex items-center gap-1">
+                                          <span>🛍️ En Tienda</span>
+                                        </span>
+                                      ) : (t.metodoEntrega === 'Envio') ? (
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[11px] font-semibold text-sky-400">🚚</span>
+                                          <select
+                                            value={t.estatusEntrega || 'Pendiente'}
+                                            disabled={t.cancelada}
+                                            onChange={e => handleUpdateDeliveryStatus(t.id, e.target.value)}
+                                            className="border rounded px-1.5 py-0.5 text-[10px] font-bold focus:outline-none cursor-pointer transition-all"
+                                            style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)', borderColor: 'var(--k-border)' }}
+                                          >
+                                            <option value="Pendiente" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>⏳ Pendiente</option>
+                                            <option value="Preparado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>📦 Preparado</option>
+                                            <option value="Enviado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>🚚 Enviado</option>
+                                            <option value="Entregado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>✅ Entregado</option>
+                                          </select>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[11px] font-semibold text-purple-400">🏪</span>
+                                          <select
+                                            value={t.estatusEntrega || 'Pendiente'}
+                                            disabled={t.cancelada}
+                                            onChange={e => handleUpdateDeliveryStatus(t.id, e.target.value)}
+                                            className="border rounded px-1.5 py-0.5 text-[10px] font-bold focus:outline-none cursor-pointer transition-all"
+                                            style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)', borderColor: 'var(--k-border)' }}
+                                          >
+                                            <option value="Pendiente" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>⏳ Pendiente</option>
+                                            <option value="Preparado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>📦 Preparado</option>
+                                            <option value="Entregado" style={{ background: 'var(--k-input-bg)', color: 'var(--k-text)' }}>✅ Entregado</option>
+                                          </select>
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td>
+                                      <span className="text-[11px] font-bold k-text flex items-center gap-1">
+                                        {(t.metodoPago || 'Efectivo') === 'Efectivo' ? '💵 Efectivo'
+                                         : t.metodoPago === 'Tarjeta' ? '💳 Tarjeta'
+                                         : t.metodoPago === 'Transferencia' ? '📲 Transf.'
+                                         : '🔄 Mixto'}
+                                      </span>
+                                    </td>
+                                    <td className="k-muted text-xs max-w-sm truncate" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>{t.comentarios || '—'}</td>
+                                    <td className="text-right font-bold k-text" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>${Number(t.monto).toFixed(2)}</td>
+                                    {config.habilitarPuntos && (
+                                      <td className="text-right font-bold" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>
+                                        {t.puntosGanados > 0 ? (
+                                          <span style={{ color: 'var(--k-gold)' }}>+{t.puntosGanados}</span>
+                                        ) : t.puntosGanados < 0 ? (
+                                          <span style={{ color: '#f87171' }}>{t.puntosGanados}</span>
+                                        ) : (
+                                          <span className="opacity-40 font-normal k-muted">—</span>
+                                        )}
+                                      </td>
+                                    )}
+                                    <td className="text-right text-xs k-muted" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>{new Date(t.createdAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                                    <td className="text-right">
+                                      {t.cancelada ? (
+                                        <span className="text-xs k-muted italic">Cancelada</span>
+                                      ) : (
+                                        <button
+                                          onClick={() => setTxToCancel(t)}
+                                          className="text-xs text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded transition-all"
+                                          style={{ background: 'rgba(244,63,94,0.1)' }}
+                                        >
+                                          Cancelar
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                                {cajaPage.length === 0 && (
+                                  <tr><td colSpan={colCount} className="px-6 py-12 text-center k-muted">Sin transacciones.</td></tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                        <TablePager
+                          page={cajaTable.page} pageSize={cajaTable.pageSize} total={cajaTotal}
+                          onPage={cajaTable.setPage} onPageSize={cajaTable.setPageSize}
+                        />
+                      </>
+                    );
+                  })()}
                 </div>
+
                 </div>
                 )}
               </div>
@@ -2147,44 +2310,78 @@ export default function App() {
                 </button>
               </div>
               <div className="glass-panel rounded-2xl overflow-hidden">
-                <table className="w-full k-table text-left border-collapse">
-                  <thead><tr>
-                    <th className="px-6">ID</th><th className="px-6">Nombre</th><th className="px-6">Teléfono</th>
-                    {config.habilitarPuntos && <th className="px-6 text-right">Puntos</th>}
-                    {config.habilitarPuntos && <th className="px-6 text-right">Equivalencia</th>}
-                    <th className="px-6 text-right">Acciones</th>
-                  </tr></thead>
-                  <tbody>
-                    {filteredClientes.map(c => (
-                      <tr key={c.id} className="group">
-                        <td className="px-6 font-mono k-muted text-xs">#{c.id}</td>
-                        <td className="px-6">
-                          <button onClick={() => setClienteDetalle(c)}
-                            className="font-bold k-text flex items-center gap-1.5 transition-colors group-hover:k-gold">
-                            {c.nombre}<ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
-                          </button>
-                        </td>
-                        <td className="px-6 k-muted">{c.telefono}</td>
-                        {config.habilitarPuntos && <td className="px-6 text-right font-extrabold text-base" style={{ color: 'var(--k-gold)' }}>{c.saldoPuntos} pts</td>}
-                        {config.habilitarPuntos && <td className="px-6 text-right font-medium k-muted">${(c.saldoPuntos * config.valorPuntoDescuento).toFixed(2)} MXN</td>}
-                        <td className="px-6 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => { setShowEditClientModal(c); setEditClient({ nombre: c.nombre, telefono: c.telefono }); }}
-                              className="p-2 rounded-lg k-muted transition-all" style={{ background: 'var(--k-nav-hover)' }}>
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleDeleteClient(c.id)}
-                              className="p-2 rounded-lg transition-all" style={{ background: 'rgba(248,113,113,0.08)', color: '#f87171' }}>
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredClientes.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center k-muted">Sin clientes.</td></tr>}
-                  </tbody>
-                </table>
+                {(() => {
+                  const cf = clientTable.colFilters;
+                  const clientFiltered = filteredClientes.filter(c => {
+                    if (cf.nombre && !c.nombre.toLowerCase().includes(cf.nombre.toLowerCase())) return false;
+                    if (cf.telefono && !c.telefono.includes(cf.telefono)) return false;
+                    if (cf.puntos && !String(c.saldoPuntos).includes(cf.puntos)) return false;
+                    return true;
+                  });
+                  const { items: clientPage, total: clientTotal } = clientTable.paginate(clientFiltered);
+                  const colCount = config.habilitarPuntos ? 6 : 4;
+                  return (
+                    <>
+                      <div className="overflow-x-auto">
+                        <div className="max-h-[560px] overflow-y-auto">
+                          <table className="w-full k-table text-left border-collapse">
+                            <thead className="sticky top-0 z-10" style={{ background: 'var(--k-glass)' }}>
+                              <tr>
+                                <th className="px-6">ID</th><th className="px-6">Nombre</th><th className="px-6">Teléfono</th>
+                                {config.habilitarPuntos && <th className="px-6 text-right">Puntos</th>}
+                                {config.habilitarPuntos && <th className="px-6 text-right">Equivalencia</th>}
+                                <th className="px-6 text-right">Acciones</th>
+                              </tr>
+                              <tr className="k-table-filter">
+                                <th className="px-6"></th>
+                                <th className="px-6"><input placeholder="Nombre…" value={cf.nombre || ''} onChange={e => clientTable.setColFilter('nombre', e.target.value)} /></th>
+                                <th className="px-6"><input placeholder="Teléfono…" value={cf.telefono || ''} onChange={e => clientTable.setColFilter('telefono', e.target.value)} /></th>
+                                {config.habilitarPuntos && <th className="px-6"><input placeholder="Puntos…" value={cf.puntos || ''} onChange={e => clientTable.setColFilter('puntos', e.target.value)} /></th>}
+                                {config.habilitarPuntos && <th className="px-6"></th>}
+                                <th className="px-6"></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {clientPage.map(c => (
+                                <tr key={c.id} className="group">
+                                  <td className="px-6 font-mono k-muted text-xs">#{c.id}</td>
+                                  <td className="px-6">
+                                    <button onClick={() => setClienteDetalle(c)}
+                                      className="font-bold k-text flex items-center gap-1.5 transition-colors group-hover:k-gold">
+                                      {c.nombre}<ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
+                                    </button>
+                                  </td>
+                                  <td className="px-6 k-muted">{c.telefono}</td>
+                                  {config.habilitarPuntos && <td className="px-6 text-right font-extrabold text-base" style={{ color: 'var(--k-gold)' }}>{c.saldoPuntos} pts</td>}
+                                  {config.habilitarPuntos && <td className="px-6 text-right font-medium k-muted">${(c.saldoPuntos * config.valorPuntoDescuento).toFixed(2)} MXN</td>}
+                                  <td className="px-6 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button onClick={() => { setShowEditClientModal(c); setEditClient({ nombre: c.nombre, telefono: c.telefono }); }}
+                                        className="p-2 rounded-lg k-muted transition-all" style={{ background: 'var(--k-nav-hover)' }}>
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
+                                      <button onClick={() => handleDeleteClient(c.id)}
+                                        className="p-2 rounded-lg transition-all" style={{ background: 'rgba(248,113,113,0.08)', color: '#f87171' }}>
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                              {clientPage.length === 0 && <tr><td colSpan={colCount} className="px-6 py-12 text-center k-muted">Sin clientes.</td></tr>}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <TablePager
+                        page={clientTable.page} pageSize={clientTable.pageSize} total={clientTotal}
+                        onPage={clientTable.setPage} onPageSize={clientTable.setPageSize}
+                      />
+                    </>
+                  );
+                })()}
               </div>
+
             </div>
           )}
 
@@ -2214,69 +2411,106 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div className="glass-panel p-6 rounded-2xl">
-                <h4 className="font-bold text-lg k-text mb-6">Historial de Compras</h4>
+              <div className="glass-panel rounded-2xl overflow-hidden">
+                <div className="p-6 pb-4">
+                  <h4 className="font-bold text-lg k-text">Historial de Compras</h4>
+                </div>
                 {transaccionesCliente(clienteDetalle.id).length === 0 ? (
-                  <div className="flex flex-col items-center py-12 k-muted gap-3">
+                  <div className="flex flex-col items-center py-12 k-muted gap-3 px-6">
                     <Package className="w-10 h-10 opacity-30" /><p>Sin compras aún.</p>
                   </div>
-                ) : (
-                    <table className="w-full k-table text-left border-collapse">
-                      <thead><tr>
-                        <th>ID</th><th>Tipo</th><th>Notas</th>
-                        <th className="text-right">Monto</th>
-                        {config.habilitarPuntos && <th className="text-right">Puntos</th>}
-                        <th className="text-right">Fecha</th>
-                      </tr></thead>
-                      <tbody>
-                        {[...transaccionesCliente(clienteDetalle.id)].reverse().map(t => (
-                          <tr key={t.id} style={t.cancelada ? { opacity: 0.6 } : {}}>
-                            <td className="font-mono k-muted text-xs">#{t.id}</td>
-                            <td><CategoriaBadge cat={t.tipoNegocio} /></td>
-                            <td className="k-muted text-xs">
-                              {t.cancelada && <span className="text-rose-400 font-extrabold mr-1">[CANCELADA]</span>}
-                              <span className="block text-[10px] k-muted mt-0.5">
-                                Pago: {(t.metodoPago || 'Efectivo') === 'Efectivo' ? '💵 Efectivo'
-                                       : t.metodoPago === 'Tarjeta' ? '💳 Tarjeta'
-                                       : t.metodoPago === 'Transferencia' ? '📲 Transferencia'
-                                       : '🔄 Pago Mixto'}
-                              </span>
-                              {t.comentarios || '—'}
-                              {((t.metodoEntrega || 'Tienda') === 'Tienda') && (
-                                <span className="block text-[10px] text-emerald-400 font-semibold mt-0.5">
-                                  🛍️ En Tienda (Entregado)
-                                </span>
+                ) : (() => {
+                  const cf = histTable.colFilters;
+                  const histData = [...transaccionesCliente(clienteDetalle.id)].reverse();
+                  const histFiltered = histData.filter(t => {
+                    if (cf.tipo && !t.tipoNegocio.toLowerCase().includes(cf.tipo.toLowerCase())) return false;
+                    if (cf.monto && !String(Number(t.monto).toFixed(2)).includes(cf.monto)) return false;
+                    return true;
+                  });
+                  const { items: histPage, total: histTotal } = histTable.paginate(histFiltered);
+                  const colCount = config.habilitarPuntos ? 6 : 5;
+                  return (
+                    <>
+                      <div className="overflow-x-auto">
+                        <div className="max-h-[520px] overflow-y-auto">
+                          <table className="w-full k-table text-left border-collapse">
+                            <thead className="sticky top-0 z-10" style={{ background: 'var(--k-glass)' }}>
+                              <tr>
+                                <th>ID</th><th>Tipo</th><th>Notas</th>
+                                <th className="text-right">Monto</th>
+                                {config.habilitarPuntos && <th className="text-right">Puntos</th>}
+                                <th className="text-right">Fecha</th>
+                              </tr>
+                              <tr className="k-table-filter">
+                                <th></th>
+                                <th><input placeholder="Tipo…" value={cf.tipo || ''} onChange={e => histTable.setColFilter('tipo', e.target.value)} /></th>
+                                <th></th>
+                                <th><input placeholder="Monto…" value={cf.monto || ''} onChange={e => histTable.setColFilter('monto', e.target.value)} /></th>
+                                {config.habilitarPuntos && <th></th>}
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {histPage.map(t => (
+                                <tr key={t.id} style={t.cancelada ? { opacity: 0.6 } : {}}>
+                                  <td className="font-mono k-muted text-xs">#{t.id}</td>
+                                  <td><CategoriaBadge cat={t.tipoNegocio} /></td>
+                                  <td className="k-muted text-xs">
+                                    {t.cancelada && <span className="text-rose-400 font-extrabold mr-1">[CANCELADA]</span>}
+                                    <span className="block text-[10px] k-muted mt-0.5">
+                                      Pago: {(t.metodoPago || 'Efectivo') === 'Efectivo' ? '💵 Efectivo'
+                                             : t.metodoPago === 'Tarjeta' ? '💳 Tarjeta'
+                                             : t.metodoPago === 'Transferencia' ? '📲 Transferencia'
+                                             : '🔄 Pago Mixto'}
+                                    </span>
+                                    {t.comentarios || '—'}
+                                    {((t.metodoEntrega || 'Tienda') === 'Tienda') && (
+                                      <span className="block text-[10px] text-emerald-400 font-semibold mt-0.5">
+                                        🛍️ En Tienda (Entregado)
+                                      </span>
+                                    )}
+                                    {t.metodoEntrega === 'Envio' && (
+                                      <span className="block text-[10px] text-sky-400 font-semibold mt-0.5">
+                                        🚚 Envío ({t.estatusEntrega === 'Pendiente' ? '⏳ Pendiente' : t.estatusEntrega === 'Preparado' ? '📦 Preparado' : t.estatusEntrega === 'Enviado' ? '🚚 Envío' : '✅ Entregado'})
+                                      </span>
+                                    )}
+                                    {t.metodoEntrega === 'Retiro' && (
+                                      <span className="block text-[10px] text-purple-400 font-semibold mt-0.5">
+                                        🏪 Retiro ({t.estatusEntrega === 'Pendiente' ? '⏳ Pendiente' : t.estatusEntrega === 'Preparado' ? '📦 Preparado' : '✅ Entregado'})
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="text-right font-bold k-text" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>${Number(t.monto).toFixed(2)}</td>
+                                  {config.habilitarPuntos && (
+                                    <td className="text-right font-bold" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>
+                                      {t.puntosGanados > 0 ? (
+                                        <span style={{ color: 'var(--k-gold)' }}>+{t.puntosGanados}</span>
+                                      ) : t.puntosGanados < 0 ? (
+                                        <span style={{ color: '#f87171' }}>{t.puntosGanados}</span>
+                                      ) : (
+                                        <span className="opacity-40 font-normal k-muted">—</span>
+                                      )}
+                                    </td>
+                                  )}
+                                  <td className="text-right text-xs k-muted" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>{new Date(t.createdAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                                </tr>
+                              ))}
+                              {histPage.length === 0 && (
+                                <tr><td colSpan={colCount} className="px-6 py-8 text-center k-muted">Sin resultados para el filtro aplicado.</td></tr>
                               )}
-                              {t.metodoEntrega === 'Envio' && (
-                                <span className="block text-[10px] text-sky-400 font-semibold mt-0.5">
-                                  🚚 Envío ({t.estatusEntrega === 'Pendiente' ? '⏳ Pendiente' : t.estatusEntrega === 'Preparado' ? '📦 Preparado' : t.estatusEntrega === 'Enviado' ? '🚚 Envío' : '✅ Entregado'})
-                                </span>
-                              )}
-                              {t.metodoEntrega === 'Retiro' && (
-                                <span className="block text-[10px] text-purple-400 font-semibold mt-0.5">
-                                  🏪 Retiro ({t.estatusEntrega === 'Pendiente' ? '⏳ Pendiente' : t.estatusEntrega === 'Preparado' ? '📦 Preparado' : '✅ Entregado'})
-                                </span>
-                              )}
-                            </td>
-                            <td className="text-right font-bold k-text" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>${Number(t.monto).toFixed(2)}</td>
-                            {config.habilitarPuntos && (
-                              <td className="text-right font-bold" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>
-                                {t.puntosGanados > 0 ? (
-                                  <span style={{ color: 'var(--k-gold)' }}>+{t.puntosGanados}</span>
-                                ) : t.puntosGanados < 0 ? (
-                                  <span style={{ color: '#f87171' }}>{t.puntosGanados}</span>
-                                ) : (
-                                  <span className="opacity-40 font-normal k-muted">—</span>
-                                )}
-                              </td>
-                            )}
-                            <td className="text-right text-xs k-muted" style={t.cancelada ? { textDecoration: 'line-through' } : {}}>{new Date(t.createdAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <TablePager
+                        page={histTable.page} pageSize={histTable.pageSize} total={histTotal}
+                        onPage={histTable.setPage} onPageSize={histTable.setPageSize}
+                      />
+                    </>
+                  );
+                })()}
               </div>
+
             </div>
           )}
 
